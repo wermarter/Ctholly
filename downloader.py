@@ -2,7 +2,9 @@ import os
 import requests
 import threading
 import time
+import itertools
 
+from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
 from utils import (
     clear_lines,
@@ -62,7 +64,7 @@ class DownloadThread(threading.Thread):
             raise DownloadFailed("Max retries (3) exceeded.")
         with open(self.filename, 'wb') as out_file:
             downloaded = 0
-            for chunk in res.iter_content(524288): # 512kB buffer
+            for chunk in res.iter_content(524288):
                 if chunk:
                     t_end = time.time()
                     out_file.write(chunk)
@@ -76,7 +78,7 @@ class FileDownloader(threading.Thread):
     """A class for multithreaded file downloading. 
     Can function normally with run() or start() as thread."""
 
-    def __init__(self, url, file_dest='', filename=None, n_thread=4, queue=None):
+    def __init__(self, url, file_dest='.', filename=None, n_thread=4, queue=None):
         super().__init__()
         # Preprocess input
         file_dest = os.path.normpath(file_dest)
@@ -94,6 +96,7 @@ class FileDownloader(threading.Thread):
             n_thread=1
 
         self.queue = queue
+        self._q = Queue()
         self.url = url
         self.file_dest = file_dest
         self.filesize = filesize
@@ -102,7 +105,6 @@ class FileDownloader(threading.Thread):
 
     def run(self):
         # Start download
-        q = Queue()
         parts_info = []
         download_threads = []
         for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread)):
@@ -112,68 +114,50 @@ class FileDownloader(threading.Thread):
                 headers = {'Range': 'bytes=%d-%d' % (start, end-1)}
             filename_part = self.file_dest + '.part' + str(i)
             parts_info.append((filename_part, end-start))
-            _thread = DownloadThread(q, self.url, filename_part, headers)
+            _thread = DownloadThread(self._q, self.url, filename_part, headers)
             _thread.start()
             download_threads.append(_thread)
-
-        # Report progress
-        # TODO a thread summarize q to queue
-        if self.queue:
-            pass
-
+            
         # Wait for download to finish
         for _thread in download_threads:
             _thread.join()
 
         # Join downloaded parts of file
-        join_files(self.file_dest, sorted(parts_info, key=\
-            lambda x: int(''.join([i for i in x[0] if i.isdigit()]))))
+        join_files(self.file_dest, sorted([i[0] for i in parts_info]), True)
 
 class BatchDownloader(threading.Thread):
     """A class for downloading whole sh*t of files. 
     Can function normally with run() or start() as thread."""
 
-    def __init__(self, urls, file_dest='.', filenames=None, n_thread=2, n_file=3, queue=None):
+    def __init__(self, urls, file_dest='.', filenames=None, n_thread=2, n_file=None, queue=None):
         super().__init__()
         if filenames is None:
             filenames = [None]*len(urls)
         if filenames == 'numeric':
             filenames = build_index_ext(urls)
         self.queue = queue
-        self.file_queue = Queue()
-        self.error_queue = Queue()
+        self._q = Queue()
         self.n_thread = n_thread
         self.n_file = n_file
         self.urls = urls
         self.file_dest = file_dest
         self.filenames = filenames
+    
+    def _download(self, args):
+        url, filename = args
+        # try:
+        fd = FileDownloader(url, self.file_dest, filename, self.n_thread, self._q)
+        fd.run()
+        # except Exception as e:
+        #     print(e)
+        #     self._q.put(('error', filename))
 
     def run(self):
         # Start download
-        q = Queue()
-        for url in self.urls:
-            
-        
+        pool = ThreadPool(self.n_file)
+        pool.map(self._download, zip(self.urls, self.filenames))
 
-        # Report progress
-        # TODO a thread summarize q to queue
+        pool.close()
+        pool.join()
         if self.queue:
             pass
-
-        # Error collecting
-        error_item = []
-        while (not self.error_queue.empty()):
-            item = self.error_queue.get()
-            error_item.append(item)
-        if len(error_item) > 0:
-            print("Found ", len(error_item), " errors:")
-            urls, filenames = [], []
-            for item in error_item:
-                url, filename = item
-                print("\t", item)
-                urls.append(url)
-                filenames.append(filename)
-            prompt = str(input("Wanna retry? ")).upper() == "Y"
-            if prompt:
-                dl = BatchDownloader(urls, '.', filenames, self.n_thread, self.n_file, self.queue)
-                dl.run()

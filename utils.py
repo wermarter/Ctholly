@@ -1,3 +1,4 @@
+import re
 import requests
 import os
 import sys
@@ -28,6 +29,7 @@ def clear_lines(n=1):
 def join_files(fn, files, verbose=True):
     """Join multiple files into one file"""
 
+    
     if verbose:
         print('Joining to', fn)
     for i in range(len(files))[1:]:
@@ -44,19 +46,24 @@ def get_file_info(url, max_tries=3):
         try:
             header = requests.head(url).headers
             break
-        except:
+        except Exception as e:
+            print(e)
             count -= 1
     if count == 0:
         raise Exception("Cannot HEAD "+url)
     sz = header.get('content-length', 0)
     fn = parse_headers(header.get('content-disposition', None)).filename_unsafe
     if fn is None:
-        fn = requests.utils.unquote(urlsplit(url).path.split('/')[-1])
+        fn = get_filename_url(url)
     return fn, int(sz), (header.get('Accept-Ranges', '')=='bytes')
 
-def get_fileext_url(url):
+def get_filename_url(url):
+    parts = urlsplit(url)
+    fn = parts.path.split('/')[-1] if not 'url=' in parts.query else re.findall(r"url=(.+?)[\?$]", parts.query)[0]
+    return requests.utils.unquote(fn)
 
-    fn = requests.utils.unquote(urlsplit(url).path.split('/')[-1])
+def get_fileext_url(url):
+    fn = get_filename_url(url)
     return os.path.splitext(fn)[1]
 
 def split_index(n, m):
@@ -73,7 +80,7 @@ def split_index(n, m):
 def filename_check(fn, include_path=False):
     """Check for filename conflicts and fix them."""
 
-    fn = ''.join(c for c in fn if c in VALID_CHARS+("/" if include_path else "")) # check if filename valid
+    fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else "")) # check if filename valid
     if os.path.isfile(fn): # check if file exists
         name, ext = os.path.splitext(fn)
         i = 1

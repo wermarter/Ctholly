@@ -1,11 +1,4 @@
-import utils
-import re
+from fetch_hvn import fetch_hvn as fetch
 
-
-url = "https://hitomi.la/galleries/1093121.html"
-url = url.replace('galleries', 'reader')
-html = utils.fetch_html(url)
-res = re.findall("<div class=\"img-url\">//g(.+?)</div>", html)
-res = ["aa"+s for s in res]
-title = re.findall("<title>(.+) \| Hitomi.la</title>", html)[0]
-print(title)
+url = "https://hentaivn.net/6708-doc-truyen-aneito-imouto.html"
+fetch(url)
