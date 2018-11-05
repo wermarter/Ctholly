@@ -141,12 +141,14 @@ class BatchDownloader(threading.Thread):
         self.n_file = n_file
         self.urls = urls
         self.file_dest = file_dest
+        self.file_dests = list()
         self.filenames = filenames
     
     def _download(self, args):
         url, filename = args
         # try:
         fd = FileDownloader(url, self.file_dest, filename, self.n_thread, self._q)
+        self.file_dests.append(fd.file_dest)
         fd.run()
         # except Exception as e:
         #     print(e)

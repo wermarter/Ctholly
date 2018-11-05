@@ -13,9 +13,12 @@ def fetch_htm(url):
     html = utils.fetch_html(url)
     title = re.findall(r"<title>(.+) \| Hitomi.la</title>", html)[0]
     res = re.findall(r"<div class=\"img-url\">//g(.+?)</div>", html)
-    img_urls = ["https://ba"+s for s in res]
+    img_urls = ["https://aa"+s for s in res]
     bd = BatchDownloader(img_urls, title, 'numeric')
     bd.run()
+    print("Postprocessing")
+    for file_dest in bd.file_dests:
+        utils.crop_to_720p(file_dest)
 
 
 if __name__ == '__main__':
@@ -35,4 +38,4 @@ if __name__ == '__main__':
             for i, url in enumerate(urls):
                 print('[%d/%d] %s'%(i+1, n, url))
                 fetch_htm(url)
-    print("")
+    print("DONE")

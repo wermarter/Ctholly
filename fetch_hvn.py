@@ -19,6 +19,9 @@ def fetch_hvn(url, title=None):
         print('Fetching', title, len(img_urls))
         bd = BatchDownloader(img_urls, title, 'numeric')
         bd.run()
+        print("Postprocessing")
+        for file_dest in bd.file_dests:
+            utils.crop_to_720p(file_dest)
     else:
         title = re.findall(r"<title>(.+) \| Đọc Online</title>", html)[0][15:]
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
@@ -49,4 +52,4 @@ if __name__ == '__main__':
             for i, url in enumerate(urls):
                 print('[%d/%d] %s'%(i+1, n, url))
                 fetch_hvn(url)
-    print("")
+    print("DONE")
