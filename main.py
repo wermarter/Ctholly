@@ -8,15 +8,19 @@ logging.captureWarnings(True)
 
 from downloader import (BatchDownloader, download_from_url)
 
+
 def download_manga(title, img_urls):
     """The process of downloading a manga."""
     
-    print('Fetching', title, len(img_urls))
+    print('Fetching {} ({})...'.format(title, len(img_urls)))
     bd = BatchDownloader(img_urls, title, 'numeric')
+    print('Downloading...')
     bd.run()
-    print('Cropping to 720p')
-    for file in bd.file_dests:
-        utils.crop_to_720p(file)
+    utils.clear_lines(2)
+    print('Cropping to 720p...')
+    utils.crop_imgs(bd.file_dests)
+    utils.clear_lines(2)
+
 
 _HTM = "https://hitomi.la"
 def fetch_htm(url):
@@ -37,7 +41,7 @@ def fetch_htm(url):
     res = re.findall(r"<div class=\"img-url\">//g(.+?)</div>", html)
     img_urls = [IMG_PREFIX + s for s in res]
 
-    # Execute
+    # Execute download
     download_manga(title, img_urls)
 
 
@@ -47,27 +51,42 @@ def fetch_hvn(url, title=None):
 
     html = utils.fetch_html(url)
 
-
+    # Try to get title for chapter
     if not title:
         title = re.findall(r"<title>(.+) Full</title>", html)
+    
+    # Yes, chapter title detected
     if len(title):
+
+        # Get url of images
         title = title[0][16:] if len(title)==1 else title
         img_urls = re.findall(r"<img src=\"(h.+?)\"", html)[1:]
+
+        # Execute download
         download_manga(title, img_urls)
+
+    # No, series title detected
     else:
-        title = re.findall(r"<title>(.+) \| Đọc Online</title>", html)[0][15:]
+
+        # Get series title and chapters title
+        title = re.findall(r"<title>(.+)\[.+\] \| Đọc Online</title>", html)[0][15:]
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
         assert len(chap_titles) == len(chap_urls)
-        print('Fetching', title, len(chap_urls))
+
+        # Iterate through each chapter
+        print('Fetching series: {} ({} chapters)'.format(title, len(chap_titles)))
         for url, chap in zip(chap_urls, chap_titles):
+
+            # Download chapter
             fetch_hvn(_HVN+url, chap)
+
+            # Move chapter to series folder
             for file in os.listdir(chap):
                 _dest = os.path.join(title, chap)
                 os.makedirs(_dest, exist_ok=True)
                 shutil.copy(os.path.join(chap, file), _dest)
             shutil.rmtree(chap)
-
 
 
 def fetch(url):
@@ -79,11 +98,11 @@ def fetch(url):
         fetch_htm(url)
 
 
-
 def main(cmd=None):
+    """Main stuff."""
 
+    # Get command from user
     if cmd is None:
-        # Get command from user
         args = sys.argv[1:]
         if len(args) == 1:
             cmd = args[0]
@@ -111,7 +130,9 @@ def main(cmd=None):
     else:
         download_from_url(cmd)
 
+
 if __name__ == '__main__':
     main()
 
-print('DONE')
+
+print('CTHOLLY EXIT')

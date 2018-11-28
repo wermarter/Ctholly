@@ -1,8 +1,6 @@
 import os
 import requests
 import threading
-import time
-import itertools
 
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
@@ -13,7 +11,6 @@ from utils import (
     get_file_info,
     split_index,
     filename_check,
-    sizeof_fmt,
     build_index_ext
 )
 
@@ -25,10 +22,7 @@ def download_report(queue, total_size):
     downloaded = 0
     t = tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024)
     while downloaded < total_size:
-        try:
-            _part, _downloaded = queue.get(timeout=10)
-        except:
-            break
+        _part, _downloaded = queue.get()
         downloaded += _downloaded
         t.update(_downloaded)
         queue.task_done()
@@ -100,13 +94,12 @@ class FileDownloader(threading.Thread):
         file_dest = filename_check(file_dest, True) 
         
         # Report can be handled externally by assigning a Queue to it
-        self._q = Queue()
-        self.queue = None
         if type(report) == Queue:
-            self.queue = self._q
+            self._q = report
             self.report = False
         else:
             self.report = report
+            self._q = Queue()
 
         # Check for multithread support
         multithread = accept_range and filesize
@@ -161,13 +154,12 @@ class BatchDownloader(threading.Thread):
             filenames = build_index_ext(urls)
         
         # Report can be handled externally by assigning a Queue to it
-        self._q = Queue()
-        self.queue = None
         if type(report) == Queue:
-            self.queue = self._q
+            self._q = report
             self.report = False
         else:
             self.report = report
+            self._q = Queue()
 
         self.n_thread = n_thread
         self.n_file = n_file
@@ -179,10 +171,11 @@ class BatchDownloader(threading.Thread):
         self.downloaders = []
         self.batch_size = 0
 
-        # Initialize downloaders and calculate totle batch size
+        # Initialize downloaders and calculate total batch size
         self.size_queue = Queue()
-        size_pool = ThreadPool(self.n_file)
-        size_pool.map(self._fetch_meta, zip(self.urls, self.filenames))
+        size_pool = ThreadPool(self.n_file*self.n_thread)
+        
+        size_pool.map(self._fetch_sizes, zip(self.urls, self.filenames))
         for _ in range(len(urls)):
             self.batch_size += self.size_queue.get()
         size_pool.close()
@@ -195,7 +188,8 @@ class BatchDownloader(threading.Thread):
             print("@[{}]:\n{}".format(fd.filename, e))
             self.errors.append((fd.url, fd.filename))
     
-    def _fetch_meta(self, url, filename):
+    def _fetch_sizes(self, args):
+        url, filename = args
         fd = FileDownloader(url, self.file_dest, filename, self.n_thread, self._q)
         self.file_dests.append(fd.file_dest)
         self.downloaders.append(fd)
@@ -203,14 +197,18 @@ class BatchDownloader(threading.Thread):
 
 
     def run(self):
+        
+        # Prepare report
+        if self.report:
+            reporter = threading.Thread(target=download_report, args = (self._q, self.batch_size))
+            reporter.start()
+
         # Start download
         pool = ThreadPool(self.n_file)
         pool.map(self._download, self.downloaders)
 
-        # Report progress
-        if self.report:
-            download_report(self._q, self.batch_size)
-
         # Wait until downloaded
         pool.close()
         pool.join()
+        if self.report:
+            reporter.join()
