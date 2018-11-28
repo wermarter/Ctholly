@@ -7,6 +7,7 @@ import shutil
 from rfc6266 import parse_headers
 from urllib.parse import (urlsplit, urlparse)
 from os.path import (isfile, join)
+from queue import Queue
 from PIL import Image
 
 
