@@ -172,14 +172,16 @@ class BatchDownloader(threading.Thread):
         self.batch_size = 0
 
         # Initialize downloaders and calculate total batch size
-        self.size_queue = Queue()
-        size_pool = ThreadPool(self.n_file*self.n_thread)
-        
-        size_pool.map(self._fetch_sizes, zip(self.urls, self.filenames))
-        for _ in range(len(urls)):
-            self.batch_size += self.size_queue.get()
-        size_pool.close()
-        size_pool.join()
+        with ThreadPool(self.n_file*self.n_thread) as size_pool:
+            iter_map = size_pool.imap(self._fetch_sizes, zip(self.urls, self.filenames))
+            if self.report:
+                pb = tqdm(total=len(urls), unit='URL')
+            for size in iter_map:
+                self.batch_size += size
+                if self.report:
+                    pb.update()
+            if self.report:
+                pb.close()
     
     def _download(self, fd):
         try:
@@ -193,7 +195,7 @@ class BatchDownloader(threading.Thread):
         fd = FileDownloader(url, self.file_dest, filename, self.n_thread, self._q)
         self.file_dests.append(fd.file_dest)
         self.downloaders.append(fd)
-        self.size_queue.put(fd.filesize)
+        return fd.filesize
 
 
     def run(self):

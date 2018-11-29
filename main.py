@@ -13,11 +13,12 @@ def download_manga(title, img_urls):
     """The process of downloading a manga."""
     
     print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric')
-    print('Downloading...')
+    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=4, n_file=8)
+    utils.clear_lines(2)
+    print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
     utils.clear_lines(2)
-    print('Cropping to 720p...')
+    print('Cropping images to 720p...')
     utils.crop_imgs(bd.file_dests)
     utils.clear_lines(2)
 
@@ -107,7 +108,7 @@ def main(cmd=None):
         if len(args) == 1:
             cmd = args[0]
         else:
-            cmd = str(input('>'))
+            cmd = str(input('> '))
     
     # Process single url
     if utils.is_html(cmd):

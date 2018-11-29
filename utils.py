@@ -4,12 +4,14 @@ import os
 import sys
 import string   
 import shutil
+
 from rfc6266 import parse_headers
 from urllib.parse import (urlsplit, urlparse)
 from os.path import (isfile, join)
 from queue import Queue
 from PIL import Image
 from tqdm import tqdm
+from multiprocessing import Pool
 
 
 VALID_CHARS = "-_.()[] %s%s" % (string.ascii_letters, string.digits)
@@ -76,16 +78,16 @@ def get_fileext_url(url):
     return os.path.splitext(fn)[1]
 
 
-def split_index(n, m):
+def split_index(n, m, start=0):
     """Return 0-based indexes pair (start, end) for splitting N items into M parts."""
 
     if (n==0) or (m==0):
         yield (0, 0)
         return
-    part_size = n // m
+    part_size = (n-start) // m
     for i in range(m-1):
-        yield part_size*i, part_size*(i+1)
-    yield part_size*(m-1), n # last partition may not have the same size
+        yield start+part_size*i, start+part_size*(i+1)
+    yield start+part_size*(m-1), n # last partition may not have the same size
 
 
 def filename_check(fn, include_path=False):
@@ -108,7 +110,7 @@ def filename_check(fn, include_path=False):
 
 
 def sizeof_fmt(num, suffix='B'):
-    """Format user-friendly filesize. kibibyte"""
+    """Format user-friendly filesize in kibibyte. (deprecated)"""
 
     for unit in ['','K','M','G','T']:
         if abs(num) < 1024.0:
@@ -167,31 +169,39 @@ def crop_to_720p(fn, min_len=720):
 
     img = Image.open(fn)
     width, height = img.size
-    if (width <= 720) or (height <= 720):
+    if (width <= min_len) or (height <= min_len):
         return
     if width < height:
-        new_width = 720
+        new_width = min_len
         percent = new_width / float(width)
         new_height = int(height * percent)
     else:
-        new_height = 720
+        new_height = min_len
         percent = new_height / float(height)
         new_width = int(width * percent)
     img = img.resize((new_width, new_height), Image.ANTIALIAS)
     img.save(fn)
 
 
-def crop_imgs(files, min_len=720, verbose=True):
-    """Crop images."""
+def _crop_to_720p(arg):
+    """A wrapper for crop_to_720p."""
+    
+    return crop_to_720p(*arg)
 
-    if verbose:
-        t = tqdm(total=len(files), unit='Files')
-    for file in files:
-        crop_to_720p(file, min_len)
+
+def crop_imgs(files, min_len=720, verbose=True):
+    """Multiprocess crop images."""
+
+    with Pool() as pool:
         if verbose:
-            t.update()
-    if verbose:
-        t.close()
+            t = tqdm(total=len(files), unit='Files')
+            inputs = list(zip(files, [min_len]*len(files)))
+        for _ in pool.imap_unordered(_crop_to_720p, inputs):
+            if verbose:
+                t.update()
+        if verbose:
+            t.close()
+
 
 
 def get_url_domain(url):
