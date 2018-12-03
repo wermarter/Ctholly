@@ -15,7 +15,7 @@ from utils import (
 )
 
 def download_from_url(url):
-    dl = FileDownloader(url, n_thread=8)
+    dl = FileDownloader(url, n_thread=16)
     dl.run()
 
 def download_report(queue, total_size):
@@ -79,19 +79,21 @@ class DownloadThread(threading.Thread):
 
 class FileDownloader(threading.Thread):
     """A class for multithreaded file downloading. 
-    Can function normally with run() or start() as thread."""
+    Can function normally with run() or start() as thread.
+    * Auto resumption if file existed."""
 
     def __init__(self, url, file_dest='.', filename=None, n_thread=4, report=True):
         super().__init__()
 
         # Preprocess file destination
+        self.start_pos = 0
         file_dest = os.path.normpath(file_dest)
         _filename, filesize, accept_range = get_file_info(url)
         if filename:
             file_dest = os.path.join(file_dest, filename)
         else:
             file_dest = os.path.join(file_dest, _filename)
-        file_dest = filename_check(file_dest, True) 
+        self.file_dest, self.start_pos = filename_check(file_dest, include_path=True, accept_exist=True)
         
         # Report can be handled externally by assigning a Queue to it
         if type(report) == Queue:
@@ -109,7 +111,6 @@ class FileDownloader(threading.Thread):
                 print('[WARN] Multithread downloading not supported for this file.')
 
         self.url = url
-        self.file_dest = file_dest
         self.filesize = filesize
         self.n_thread = n_thread
         self.multithread = multithread
@@ -118,7 +119,7 @@ class FileDownloader(threading.Thread):
         # Start download threads
         download_threads = []
         part_names = []
-        for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread)):
+        for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread, self.start_pos)):
             if not self.multithread:
                 headers = None
             else:

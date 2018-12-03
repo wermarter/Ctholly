@@ -90,11 +90,12 @@ def split_index(n, m, start=0):
     yield start+part_size*(m-1), n # last partition may not have the same size
 
 
-def filename_check(fn, include_path=False):
+def filename_check(fn, include_path=False, accept_exist=False):
     """Check for filename conflicts and fix them."""
 
-    fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else "")) # check if filename valid
-    if os.path.isfile(fn): # check if file exists
+    fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else ""))
+    if (not accept_exist) and os.path.isfile(fn):
+        file_sz = os.path.getsize(fn)
         name, ext = os.path.splitext(fn)
         i = 1
         test_name = name + ' (1)' + ext
@@ -106,6 +107,13 @@ def filename_check(fn, include_path=False):
         root_folder = os.path.split(fn)[0]
         if len(root_folder)>1:
             os.makedirs(root_folder, exist_ok=True)
+    
+    if accept_exist:
+        if os.path.isfile(fn):
+            file_sz = os.path.getsize(file_sz)
+        else:
+            file_sz = 0
+        return fn, file_sz
     return fn
 
 
