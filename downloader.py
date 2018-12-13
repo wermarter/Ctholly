@@ -69,7 +69,7 @@ class DownloadThread(threading.Thread):
         res = self.try_to_get()
         if res is None:
             raise DownloadFailed("Max retries exceeded.")
-        with open(self.filename, 'wb') as out_file:
+        with open(self.filename, 'ab') as out_file:
             for chunk in res.iter_content(524288):
                 if chunk:
                     out_file.write(chunk)
@@ -82,18 +82,34 @@ class FileDownloader(threading.Thread):
     Can function normally with run() or start() as thread.
     * Auto resumption if file existed."""
 
-    def __init__(self, url, file_dest='.', filename=None, n_thread=4, report=True):
+    def __init__(self, url, file_dest='.', filename=None, n_thread=4, report=True, overwrite=False):
         super().__init__()
 
-        # Preprocess file destination
-        self.start_pos = 0
-        file_dest = os.path.normpath(file_dest)
+        # Check for multithread support
         _filename, filesize, accept_range = get_file_info(url)
+        multithread = accept_range and filesize
+        if (not multithread) and (n_thread > 1):
+            n_thread=1
+            if report:
+                print('[WARN] Multithread downloading not supported for this file.')
+
+        # Preprocess file destination
+        file_dest = os.path.normpath(file_dest)
         if filename:
             file_dest = os.path.join(file_dest, filename)
         else:
             file_dest = os.path.join(file_dest, _filename)
-        self.file_dest, self.start_pos = filename_check(file_dest, include_path=True, accept_exist=True)
+        file_dest, start_pos = filename_check(file_dest, include_path=True, check_progress=True)
+
+        # Download resumption
+        if not overwrite:
+            if len(start_pos)==0:
+                self.start_pos = [0]*n_thread
+            elif (start_pos[0] != 0) and (len(start_pos)>1):
+                print('Found', len(start_pos), 'downloaded parts. Resuming...')
+                self.start_pos = start_pos
+                n_thread = len(start_pos)
+            
         
         # Report can be handled externally by assigning a Queue to it
         if type(report) == Queue:
@@ -103,13 +119,7 @@ class FileDownloader(threading.Thread):
             self.report = report
             self._q = Queue()
 
-        # Check for multithread support
-        multithread = accept_range and filesize
-        if (not multithread) and (n_thread > 1):
-            n_thread=1
-            if self.report:
-                print('[WARN] Multithread downloading not supported for this file.')
-
+        self.file_dest = file_dest
         self.url = url
         self.filesize = filesize
         self.n_thread = n_thread
@@ -119,11 +129,11 @@ class FileDownloader(threading.Thread):
         # Start download threads
         download_threads = []
         part_names = []
-        for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread, self.start_pos)):
+        for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread)):
             if not self.multithread:
                 headers = None
             else:
-                headers = {'Range': 'bytes=%d-%d' % (start, end-1)}
+                headers = {'Range': 'bytes=%d-%d' % (self.start_pos[i]+start, end-1)}
             part_name = self.file_dest + '.part' + str(i)
             part_names.append(part_name)
             _thread = DownloadThread(self._q, self.url, part_name, headers)
@@ -132,14 +142,14 @@ class FileDownloader(threading.Thread):
 
         # Report progress
         if self.report:
-            download_report(self._q, self.filesize)
+            download_report(self._q, self.filesize-sum(self.start_pos))
         
         # Wait for download to finish
         for _thread in download_threads:
             _thread.join()
 
         # Join downloaded parts of file
-        join_files(self.file_dest, sorted(part_names), self.report)
+        join_files(self.file_dest, part_names, self.report)
 
 class BatchDownloader(threading.Thread):
     """A class for downloading whole sh*t of files. 
