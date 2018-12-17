@@ -57,7 +57,10 @@ def get_file_info(url, max_tries=3):
     if count == 0:
         raise Exception("Cannot HEAD "+url)
     sz = header.get('content-length', 0)
-    fn = parse_headers(header.get('content-disposition', None)).filename_unsafe
+    try:
+        fn = parse_headers(header.get('content-disposition', None)).filename_unsafe
+    except:
+        fn = None
     if fn is None:
         fn = get_filename_url(url)
     return fn, int(sz), (header.get('Accept-Ranges', '')=='bytes')

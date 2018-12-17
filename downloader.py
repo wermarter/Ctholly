@@ -70,7 +70,7 @@ class DownloadThread(threading.Thread):
         if res is None:
             raise DownloadFailed("Max retries exceeded.")
         with open(self.filename, 'ab') as out_file:
-            for chunk in res.iter_content(524288):
+            for chunk in res.iter_content(100000):
                 if chunk:
                     out_file.write(chunk)
                     self.q.put((self.filename, len(chunk)))

@@ -19,7 +19,7 @@ def download_manga(title, img_urls):
     bd.run()
     utils.clear_lines(2)
     print('Cropping images to 720p...')
-    utils.crop_imgs(bd.file_dests)
+    utils.crop_imgs(bd.file_dests, 1080)
     utils.clear_lines(2)
 
 
