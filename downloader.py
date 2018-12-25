@@ -85,12 +85,20 @@ class FileDownloader(threading.Thread):
     def __init__(self, url, file_dest='.', filename=None, n_thread=4, report=True, overwrite=False):
         super().__init__()
 
+        # Report can be handled externally by assigning a Queue to it
+        if type(report) == Queue:
+            self._q = report
+            self.report = False
+        else:
+            self.report = report
+            self._q = Queue()
+
         # Check for multithread support
         _filename, filesize, accept_range = get_file_info(url)
         multithread = accept_range and filesize
         if (not multithread) and (n_thread > 1):
             n_thread=1
-            if report:
+            if self.report:
                 print('[WARN] Multithread downloading not supported for this file.')
 
         # Preprocess file destination
@@ -106,18 +114,10 @@ class FileDownloader(threading.Thread):
             if len(start_pos)==0:
                 self.start_pos = [0]*n_thread
             elif (start_pos[0] != 0) and (len(start_pos)>1):
-                print('Found', len(start_pos), 'downloaded parts. Resuming...')
+                if self.report:
+                    print('Found', len(start_pos), 'downloaded parts. Resuming...')
                 self.start_pos = start_pos
                 n_thread = len(start_pos)
-            
-        
-        # Report can be handled externally by assigning a Queue to it
-        if type(report) == Queue:
-            self._q = report
-            self.report = False
-        else:
-            self.report = report
-            self._q = Queue()
 
         self.file_dest = file_dest
         self.url = url

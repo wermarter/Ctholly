@@ -19,7 +19,7 @@ def download_manga(title, img_urls):
     bd.run()
     utils.clear_lines(2)
     print('Cropping images to 720p...')
-    utils.crop_imgs(bd.file_dests, 1080)
+    utils.crop_imgs(bd.file_dests, 720)
     utils.clear_lines(2)
 
 
@@ -63,6 +63,9 @@ def fetch_hvn(url, title=None):
         title = title[0][16:] if len(title)==1 else title
         img_urls = re.findall(r"<img src=\"(h.+?)\"", html)[1:]
 
+        # Choose server for fast image load
+        img_urls = [('https://aujnefsoen.cloudimg.io/cdno/n/n/'+img) for img in img_urls]
+
         # Execute download
         download_manga(title, img_urls)
 
@@ -70,10 +73,12 @@ def fetch_hvn(url, title=None):
     else:
 
         # Get series title and chapters title
-        title = re.findall(r"<title>(.+)\[.+\] \| Đọc Online</title>", html)[0][15:]
+        title = re.findall(r"<title>(.+)(\[.+\])? \| Đọc Online</title>", html)[0][15:]
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
         assert len(chap_titles) == len(chap_urls)
+        if len(chap_titles) == 1:
+            return fetch_hvn(_HVN+chap_urls[0])
 
         # Iterate through each chapter
         print('Fetching series: {} ({} chapters)'.format(title, len(chap_titles)))
