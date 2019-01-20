@@ -64,7 +64,8 @@ def fetch_hvn(url, title=None):
         img_urls = re.findall(r"<img src=\"(h.+?)\"", html)[1:]
 
         # Choose server for fast image load
-        img_urls = [('https://aujnefsoen.cloudimg.io/cdno/n/n/'+img) for img in img_urls]
+        img_server = ''
+        img_urls = [(img_server+img) for img in img_urls]
 
         # Execute download
         download_manga(title, img_urls)
@@ -73,7 +74,7 @@ def fetch_hvn(url, title=None):
     else:
 
         # Get series title and chapters title
-        title = re.findall(r"<title>(.+)(\[.+\])? \| Đọc Online</title>", html)[0][15:]
+        title = re.findall(r"<title>(.+) (\[.+\])? \| Đọc Online</title>", html)[0][0][15:]
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
         assert len(chap_titles) == len(chap_urls)
@@ -102,6 +103,8 @@ def fetch(url):
         fetch_hvn(url)
     elif url.startswith(_HTM):
         fetch_htm(url)
+    else:
+        download_from_url(url)
 
 
 def main(cmd=None):

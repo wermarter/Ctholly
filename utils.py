@@ -31,8 +31,7 @@ def clear_lines(n=1):
 
 
 def join_files(fn, files, verbose=True):
-    """Join multiple files into one file"""
-
+    """Join multiple files into one file."""
     
     if verbose:
         print('Joining to', fn)
@@ -43,27 +42,27 @@ def join_files(fn, files, verbose=True):
     os.rename(files[0], fn)
 
 
-def get_file_info(url, max_tries=3):
+def get_file_info(url, max_tries=5):
     """Get filename, GzipSize and check if "Accept-Ranges" from the url."""
 
     count = max_tries
+    filesize = 0
     while (count > 0):
         try:
             header = requests.head(url).headers
+            filesize = int(header['content-length'])
+            assert filesize > 0
             break
-        except Exception as e:
-            print(e)
+        except:
             count -= 1
-    if count == 0:
-        raise Exception("Cannot HEAD "+url)
-    sz = header.get('content-length', 0)
+    if (count == 0):
+        raise Exception("Cannot fetch info "+url)
     try:
         fn = parse_headers(header.get('content-disposition', None)).filename_unsafe
+        assert not(fn is None)
     except:
-        fn = None
-    if fn is None:
         fn = get_filename_url(url)
-    return fn, int(sz), (header.get('Accept-Ranges', '')=='bytes')
+    return fn, filesize, (header.get('Accept-Ranges', '')=='bytes')
 
 
 def get_filename_url(url):
@@ -96,7 +95,7 @@ def split_index(n, m, start=0):
 def filename_check(fn, include_path=False, check_progress=False):
     """Check for filename conflicts and fix them."""
 
-    fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else ""))
+    # fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else ""))
 
     if include_path:
         root_folder = os.path.split(fn)[0]
@@ -200,9 +199,12 @@ def crop_to_720p(fn, min_len=720):
 
 
 def _crop_to_720p(arg):
-    """A wrapper for crop_to_720p."""
-    
-    return crop_to_720p(*arg)
+    """A wrapper for crop_to_720p. Error will be ignored."""
+
+    try:
+        return crop_to_720p(*arg)
+    except:
+        return
 
 
 def crop_imgs(files, min_len=720, verbose=True):
