@@ -1,18 +1,19 @@
 import os
-import requests
 import threading
-
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
+
+import requests
 from tqdm import tqdm
+
 from utils import (
-    clear_lines,
     join_files,
     get_file_info,
     split_index,
     filename_check,
     build_index_ext
 )
+
 
 def download_from_url(url):
     dl = FileDownloader(url, n_thread=16)
@@ -122,7 +123,7 @@ class FileDownloader(threading.Thread):
 
         # Download resumption
         if not overwrite:
-            if len(start_pos)==0:
+            if len(start_pos) == 0:
                 self.start_pos = [0]*n_thread
             elif (start_pos[0] != 0) and (len(start_pos)>1):
                 if self.report:
