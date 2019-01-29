@@ -19,10 +19,11 @@ def download_from_url(url):
     dl = FileDownloader(url, n_thread=16)
     dl.run()
 
+
 def download_report(queue, total_size):
     downloaded = 0
     t = tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024)
-    while downloaded < total_size: # [Issue] files failing to be fetched result in interminable condition
+    while downloaded < total_size:  # [Issue] files failing to be fetched result in interminable condition
         msg = queue.get()
         if msg == "DONE":
             break
@@ -31,6 +32,7 @@ def download_report(queue, total_size):
         t.update(_downloaded)
         queue.task_done()
     t.close()
+
 
 #####################
 # exception classes #
@@ -61,7 +63,7 @@ class DownloadThread(threading.Thread):
 
     def try_to_get(self):
         tries, res = 0, None
-        while (tries < 3):
+        while tries < 3:
             try:
                 res = requests.get(self.url, stream=True, headers=self.headers, verify=False, allow_redirects=True)
                 break
@@ -109,7 +111,7 @@ class FileDownloader(threading.Thread):
             self._non_downloadable = False
         multithread = accept_range and filesize
         if (not multithread) and (n_thread > 1):
-            n_thread=1
+            n_thread = 1
             if self.report:
                 print('[WARN] Multithread downloading not supported for this file.')
 
@@ -124,8 +126,8 @@ class FileDownloader(threading.Thread):
         # Download resumption
         if not overwrite:
             if len(start_pos) == 0:
-                self.start_pos = [0]*n_thread
-            elif (start_pos[0] != 0) and (len(start_pos)>1):
+                self.start_pos = [0] * n_thread
+            elif (start_pos[0] != 0) and (len(start_pos) > 1):
                 if self.report:
                     print('Found', len(start_pos), 'downloaded parts. Resuming...')
                 self.start_pos = start_pos
@@ -142,7 +144,7 @@ class FileDownloader(threading.Thread):
         # Sanity check
         if self._non_downloadable:
             return
-        
+
         # Start download threads
         download_threads = []
         part_names = []
@@ -150,7 +152,7 @@ class FileDownloader(threading.Thread):
             if not self.multithread:
                 headers = None
             else:
-                headers = {'Range': 'bytes=%d-%d' % (self.start_pos[i]+start, end-1)}
+                headers = {'Range': 'bytes=%d-%d' % (self.start_pos[i] + start, end - 1)}
             part_name = self.file_dest + '.part' + str(i)
             part_names.append(part_name)
             _thread = DownloadThread(self._q, self.url, part_name, headers)
@@ -160,9 +162,9 @@ class FileDownloader(threading.Thread):
         # Report progress
         if self.report:
             report_thread = threading.Thread(target=download_report, \
-                            args=(self._q, self.filesize-sum(self.start_pos)))
+                                             args=(self._q, self.filesize - sum(self.start_pos)))
             report_thread.start()
-    
+
         # Wait for download to finish
         for _thread in download_threads:
             _thread.join()
@@ -179,12 +181,13 @@ class FileDownloader(threading.Thread):
         actual_size = os.path.getsize(self.file_dest)
         if actual_size != self.filesize:
             if self.report:
-                delete = input("Size mismatched [%s/%s]. Delete? "%(actual_size, self.filesize))
+                delete = input("Size mismatched [%s/%s]. Delete? " % (actual_size, self.filesize))
                 delete = True if str(delete).upper()[0] == 'Y' else False
                 if delete:
                     os.remove(self.file_dest)
             else:
-                raise Exception("Size mismatched [%s/%s]."%(actual_size, self.filesize))
+                raise Exception("Size mismatched [%s/%s]." % (actual_size, self.filesize))
+
 
 class BatchDownloader(threading.Thread):
     """A class for downloading whole sh*t of files. 
@@ -195,10 +198,10 @@ class BatchDownloader(threading.Thread):
 
         # Filenames preprocessing
         if filenames is None:
-            filenames = [None]*len(urls)
+            filenames = [None] * len(urls)
         if filenames == 'numeric':
             filenames = build_index_ext(urls)
-        
+
         # Report can be handled externally by assigning a Queue to it
         if type(report) == Queue:
             self._q = report
@@ -218,7 +221,7 @@ class BatchDownloader(threading.Thread):
         self.batch_size = 0
 
         # Initialize downloaders and calculate total batch size
-        with ThreadPool(self.n_file*self.n_thread) as size_pool:
+        with ThreadPool(self.n_file * self.n_thread) as size_pool:
             iter_map = size_pool.imap(self._fetch_sizes, zip(self.urls, self.filenames))
             if self.report:
                 pb = tqdm(total=len(urls), unit='URL')
@@ -228,7 +231,7 @@ class BatchDownloader(threading.Thread):
                     pb.update()
             if self.report:
                 pb.close()
-    
+
     def _download(self, fd):
         try:
             fd.run()
@@ -236,7 +239,7 @@ class BatchDownloader(threading.Thread):
             self.errors.append((fd.url, fd.filename))
             if self.report:
                 print("@[{}]:\n{}".format(fd.filename, e))
-    
+
     def _fetch_sizes(self, args):
         url, filename = args
         fd = FileDownloader(url, self.file_dest, filename, self.n_thread, self._q)
@@ -245,12 +248,11 @@ class BatchDownloader(threading.Thread):
             self.downloaders.append(fd)
         return fd.filesize
 
-
     def run(self):
-        
+
         # Prepare report
         if self.report:
-            reporter = threading.Thread(target=download_report, args = (self._q, self.batch_size))
+            reporter = threading.Thread(target=download_report, args=(self._q, self.batch_size))
             reporter.start()
 
         # Start download
@@ -262,7 +264,7 @@ class BatchDownloader(threading.Thread):
         pool.join()
         if self.report:
             reporter.join()
-        
+
         # Error ouput can be fed back into input
         if len(self.errors) > 0:
             with open('ctholly.errors', 'a') as f:
