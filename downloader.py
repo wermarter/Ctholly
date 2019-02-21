@@ -161,7 +161,7 @@ class FileDownloader(threading.Thread):
 
         # Report progress
         if self.report:
-            report_thread = threading.Thread(target=download_report, \
+            report_thread = threading.Thread(target=download_report,
                                              args=(self._q, self.filesize - sum(self.start_pos)))
             report_thread.start()
 
@@ -236,9 +236,9 @@ class BatchDownloader(threading.Thread):
         try:
             fd.run()
         except Exception as e:
-            self.errors.append((fd.url, fd.filename))
+            self.errors.append((fd.url, fd.file_dest))
             if self.report:
-                print("@[{}]:\n{}".format(fd.filename, e))
+                print("@[{}]:\n{}".format(fd.file_dest, e))
 
     def _fetch_sizes(self, args):
         url, filename = args

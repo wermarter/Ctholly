@@ -20,7 +20,7 @@ VALID_CHARS = "-_.()[] %s%s" % (string.ascii_letters, string.digits)
 ####################
 
 def clear_lines(n=1):
-    """Clear lines before this line."""
+    """Clear lines before this line. Only works in terminal."""
 
     sys.stdout.write("\033[K")  # Clear
     for _ in range(n):
