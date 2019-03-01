@@ -1,3 +1,5 @@
+# coding: utf8
+
 from downloader import (BatchDownloader, download_from_url)
 
 import os
