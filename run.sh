@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Add `alias ctholly=${PATH_TO_RUN.SH}` to `.bashrc`
+# will allow you to use Ctholly via `ctholly` in terminal
+
 # Assign install location to DIR
 DIR=$(dirname "${BASH_SOURCE[0]}")
 
