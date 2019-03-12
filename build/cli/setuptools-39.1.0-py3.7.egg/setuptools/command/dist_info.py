@@ -10,6 +10,7 @@ from distutils import log
 
 
 class dist_info(Command):
+
     description = 'create a .dist-info directory'
 
     user_options = [

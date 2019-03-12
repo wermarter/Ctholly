@@ -22,8 +22,8 @@ class alias(option_base):
     command_consumes_arguments = True
 
     user_options = [
-                       ('remove', 'r', 'remove (unset) the alias'),
-                   ] + option_base.user_options
+        ('remove', 'r', 'remove (unset) the alias'),
+    ] + option_base.user_options
 
     boolean_options = option_base.boolean_options + ['remove']
 

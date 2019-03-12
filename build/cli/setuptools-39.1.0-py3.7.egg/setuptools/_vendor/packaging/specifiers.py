@@ -76,6 +76,7 @@ class BaseSpecifier(with_metaclass(abc.ABCMeta, object)):
 
 
 class _IndividualSpecifier(BaseSpecifier):
+
     _operators = {}
 
     def __init__(self, spec="", prereleases=None):
@@ -194,7 +195,7 @@ class _IndividualSpecifier(BaseSpecifier):
                 # prereleases, then we'll store it for later incase nothing
                 # else matches this specifier.
                 if (parsed_version.is_prerelease and not
-                (prereleases or self.prereleases)):
+                        (prereleases or self.prereleases)):
                     found_prereleases.append(version)
                 # Either this is not a prerelease, or we should have been
                 # accepting prereleases from the begining.
@@ -211,6 +212,7 @@ class _IndividualSpecifier(BaseSpecifier):
 
 
 class LegacySpecifier(_IndividualSpecifier):
+
     _regex_str = (
         r"""
         (?P<operator>(==|!=|<=|>=|<|>))
@@ -267,11 +269,11 @@ def _require_version_compare(fn):
         if not isinstance(prospective, Version):
             return False
         return fn(self, prospective, spec)
-
     return wrapped
 
 
 class Specifier(_IndividualSpecifier):
+
     _regex_str = (
         r"""
         (?P<operator>(~=|==|!=|<=|>=|<|>|===))
@@ -396,7 +398,7 @@ class Specifier(_IndividualSpecifier):
             list(
                 itertools.takewhile(
                     lambda x: (not x.startswith("post") and not
-                    x.startswith("dev")),
+                               x.startswith("dev")),
                     _version_split(spec),
                 )
             )[:-1]

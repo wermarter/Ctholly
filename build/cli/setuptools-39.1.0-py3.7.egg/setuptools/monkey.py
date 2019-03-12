@@ -73,13 +73,13 @@ def patch_all():
         distutils.filelist.findall = setuptools.findall
 
     needs_warehouse = (
-            sys.version_info < (2, 7, 13)
-            or
-            (3, 0) < sys.version_info < (3, 3, 7)
-            or
-            (3, 4) < sys.version_info < (3, 4, 6)
-            or
-            (3, 5) < sys.version_info <= (3, 5, 3)
+        sys.version_info < (2, 7, 13)
+        or
+        (3, 0) < sys.version_info < (3, 3, 7)
+        or
+        (3, 4) < sys.version_info < (3, 4, 6)
+        or
+        (3, 5) < sys.version_info <= (3, 5, 3)
     )
 
     if needs_warehouse:

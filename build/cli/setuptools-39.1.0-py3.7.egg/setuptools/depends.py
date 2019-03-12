@@ -6,6 +6,7 @@ from imp import PKG_DIRECTORY, PY_COMPILED, PY_SOURCE, PY_FROZEN
 
 from .py33compat import Bytecode
 
+
 __all__ = [
     'Require', 'find_module', 'get_module_constant', 'extract_constant'
 ]
@@ -15,7 +16,7 @@ class Require:
     """A prerequisite to building or installing a distribution"""
 
     def __init__(self, name, requested_version, module, homepage='',
-                 attribute=None, format=None):
+            attribute=None, format=None):
 
         if format is None and requested_version is not None:
             format = StrictVersion
@@ -37,7 +38,7 @@ class Require:
     def version_ok(self, version):
         """Is 'version' sufficiently up-to-date?"""
         return self.attribute is None or self.format is None or \
-               str(version) != "unknown" and version >= self.requested_version
+            str(version) != "unknown" and version >= self.requested_version
 
     def get_version(self, paths=None, default="unknown"):
         """Get version number of installed module, 'None', or 'default'

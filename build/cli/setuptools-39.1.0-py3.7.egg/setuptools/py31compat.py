@@ -6,11 +6,11 @@ try:
 except ImportError:
     from distutils.sysconfig import get_config_vars, get_python_lib
 
-
     def get_path(name):
         if name not in ('platlib', 'purelib'):
             raise ValueError("Name must be purelib or platlib")
         return get_python_lib(name == 'platlib')
+
 
 try:
     # Python >=3.2
@@ -18,7 +18,6 @@ try:
 except ImportError:
     import shutil
     import tempfile
-
 
     class TemporaryDirectory(object):
         """

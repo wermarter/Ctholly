@@ -30,7 +30,6 @@ from .monkey import get_unpatched
 
 if platform.system() == 'Windows':
     from setuptools.extern.six.moves import winreg
-
     safe_env = os.environ
 else:
     """
@@ -38,13 +37,11 @@ else:
     on this platform.
     """
 
-
     class winreg:
         HKEY_USERS = None
         HKEY_CURRENT_USER = None
         HKEY_LOCAL_MACHINE = None
         HKEY_CLASSES_ROOT = None
-
 
     safe_env = dict()
 
@@ -238,7 +235,7 @@ def _augment_exception(exc, version, arch=''):
                         r'http://landinghub.visualstudio.com/'
                         'visual-cpp-build-tools')
 
-    exc.args = (message,)
+    exc.args = (message, )
 
 
 class PlatformInfo:
@@ -812,7 +809,7 @@ class SystemInfo:
             dir_name
             for dir_name in reversed(os.listdir(path))
             if os.path.isdir(os.path.join(path, dir_name)) and
-               dir_name.startswith(prefix)
+            dir_name.startswith(prefix)
         )
         return next(matching_dirs, None) or ''
 
@@ -950,7 +947,7 @@ class EnvironmentInfo:
             arch_subdir = self.pi.target_dir(x64=True)
             lib = os.path.join(self.si.WindowsSdkDir, 'lib')
             libver = self._sdk_subdir
-            return [os.path.join(lib, '%sum%s' % (libver, arch_subdir))]
+            return [os.path.join(lib, '%sum%s' % (libver , arch_subdir))]
 
     @property
     def OSIncludes(self):

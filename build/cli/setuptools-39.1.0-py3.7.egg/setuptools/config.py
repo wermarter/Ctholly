@@ -319,7 +319,6 @@ class ConfigHandler(object):
         :param parse_methods:
         :rtype: callable
         """
-
         def parse(value):
             parsed = value
 
@@ -384,6 +383,7 @@ class ConfigHandler(object):
 
 
 class ConfigMetadataHandler(ConfigHandler):
+
     section_prefix = 'metadata'
 
     aliases = {
@@ -442,6 +442,7 @@ class ConfigMetadataHandler(ConfigHandler):
 
 
 class ConfigOptionsHandler(ConfigHandler):
+
     section_prefix = 'options'
 
     @property

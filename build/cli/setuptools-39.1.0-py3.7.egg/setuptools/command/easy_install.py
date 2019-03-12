@@ -96,7 +96,6 @@ if six.PY2:
     def _to_ascii(s):
         return s
 
-
     def isascii(s):
         try:
             six.text_type(s, 'ascii')
@@ -108,13 +107,13 @@ else:
     def _to_ascii(s):
         return s.encode('ascii')
 
-
     def isascii(s):
         try:
             s.encode('ascii')
             return True
         except UnicodeError:
             return False
+
 
 _one_liner = lambda text: textwrap.dedent(text).strip().replace('\n', '; ')
 
@@ -560,8 +559,8 @@ class easy_install(Command):
                     dirname, basename = os.path.split(executable)
                     alt = os.path.join(dirname, 'pythonw.exe')
                     use_alt = (
-                            basename.lower() == 'python.exe' and
-                            os.path.exists(alt)
+                        basename.lower() == 'python.exe' and
+                        os.path.exists(alt)
                     )
                     if use_alt:
                         # use pythonw.exe to avoid opening a console window
@@ -680,9 +679,9 @@ class easy_install(Command):
         install_needed = install_needed or os.path.dirname(download) == tmpdir
         install_needed = install_needed or not download.endswith('.egg')
         install_needed = install_needed or (
-                self.always_copy_from is not None and
-                os.path.dirname(normalize_path(download)) ==
-                normalize_path(self.always_copy_from)
+            self.always_copy_from is not None and
+            os.path.dirname(normalize_path(download)) ==
+            normalize_path(self.always_copy_from)
         )
 
         if spec and not install_needed:
@@ -1645,11 +1644,11 @@ class PthDistributions(Environment):
     def add(self, dist):
         """Add `dist` to the distribution map"""
         new_path = (
-                dist.location not in self.paths and (
+            dist.location not in self.paths and (
                 dist.location not in self.sitedirs or
                 # account for '.' being in PYTHONPATH
                 dist.location == os.getcwd()
-        )
+            )
         )
         if new_path:
             self.paths.append(dist.location)

@@ -83,7 +83,7 @@ def _get_build_requires(config_settings):
     requirements = ['setuptools', 'wheel']
 
     sys.argv = sys.argv[:1] + ['egg_info'] + \
-               config_settings["--global-option"]
+        config_settings["--global-option"]
     try:
         with Distribution.patch():
             _run_setup()
@@ -111,9 +111,9 @@ def get_requires_for_build_sdist(config_settings=None):
 def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
     sys.argv = sys.argv[:1] + ['dist_info', '--egg-base', metadata_directory]
     _run_setup()
-
+    
     dist_info_directory = metadata_directory
-    while True:
+    while True:    
         dist_infos = [f for f in os.listdir(dist_info_directory)
                       if f.endswith('.dist-info')]
 
@@ -142,7 +142,7 @@ def build_wheel(wheel_directory, config_settings=None,
     config_settings = _fix_config(config_settings)
     wheel_directory = os.path.abspath(wheel_directory)
     sys.argv = sys.argv[:1] + ['bdist_wheel'] + \
-               config_settings["--global-option"]
+        config_settings["--global-option"]
     _run_setup()
     if wheel_directory != 'dist':
         shutil.rmtree(wheel_directory)
@@ -159,7 +159,7 @@ def build_sdist(sdist_directory, config_settings=None):
     config_settings = _fix_config(config_settings)
     sdist_directory = os.path.abspath(sdist_directory)
     sys.argv = sys.argv[:1] + ['sdist'] + \
-               config_settings["--global-option"]
+        config_settings["--global-option"]
     _run_setup()
     if sdist_directory != 'dist':
         shutil.rmtree(sdist_directory)

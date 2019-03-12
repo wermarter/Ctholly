@@ -128,8 +128,8 @@ def setup(**attrs):
     _install_setup_requires(attrs)
     return distutils.core.setup(**attrs)
 
-
 setup.__doc__ = distutils.core.setup.__doc__
+
 
 _Command = monkey.get_unpatched(distutils.core.Command)
 

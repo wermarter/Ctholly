@@ -13,11 +13,12 @@ from setuptools import Distribution as SetuptoolsDistribution
 from setuptools import pep425tags
 from setuptools.command.egg_info import write_requirements
 
+
 WHEEL_NAME = re.compile(
     r"""^(?P<project_name>.+?)-(?P<version>\d.*?)
     ((-(?P<build>\d.*?))?-(?P<py_version>.+?)-(?P<abi>.+?)-(?P<platform>.+?)
     )\.whl$""",
-    re.VERBOSE).match
+re.VERBOSE).match
 
 NAMESPACE_PACKAGE_INIT = '''\
 try:
@@ -82,12 +83,10 @@ class Wheel(object):
             dist_basename = '%s-%s' % (self.project_name, self.version)
             dist_info = '%s.dist-info' % dist_basename
             dist_data = '%s.data' % dist_basename
-
             def get_metadata(name):
                 with zf.open('%s/%s' % (dist_info, name)) as fp:
                     value = fp.read().decode('utf-8') if PY3 else fp.read()
                     return email.parser.Parser().parsestr(value)
-
             wheel_metadata = get_metadata('WHEEL')
             dist_metadata = get_metadata('METADATA')
             # Check wheel format version is supported.
@@ -103,14 +102,12 @@ class Wheel(object):
                 destination_eggdir, dist_info,
                 metadata=PathMetadata(destination_eggdir, dist_info)
             )
-
             # Note: we need to evaluate and strip markers now,
             # as we can't easily convert back from the syntax:
             # foobar; "linux" in sys_platform and extra == 'test'
             def raw_req(req):
                 req.marker = None
                 return str(req)
-
             install_requires = list(sorted(map(raw_req, dist.requires())))
             extras_require = {
                 extra: list(sorted(
@@ -147,8 +144,8 @@ class Wheel(object):
                                   os.path.join(egg_info_scripts, entry))
                 os.rmdir(dist_data_scripts)
             for subdir in filter(os.path.exists, (
-                    os.path.join(dist_data, d)
-                    for d in ('data', 'headers', 'purelib', 'platlib')
+                os.path.join(dist_data, d)
+                for d in ('data', 'headers', 'purelib', 'platlib')
             )):
                 unpack(subdir, destination_eggdir)
             if os.path.exists(dist_data):

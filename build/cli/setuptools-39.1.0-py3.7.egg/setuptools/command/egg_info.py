@@ -113,7 +113,7 @@ def translate_pattern(glob):
             pat += sep
 
     pat += r'\Z'
-    return re.compile(pat, flags=re.MULTILINE | re.DOTALL)
+    return re.compile(pat, flags=re.MULTILINE|re.DOTALL)
 
 
 class egg_info(Command):
@@ -152,7 +152,6 @@ class egg_info(Command):
     @tag_svn_revision.setter
     def tag_svn_revision(self, value):
         pass
-
     ####################################
 
     def save_version_info(self, filename):
@@ -301,9 +300,9 @@ class egg_info(Command):
         if os.path.exists(bei):
             log.warn(
                 "-" * 78 + '\n'
-                           "Note: Your current .egg-info directory has a '-' in its name;"
-                           '\nthis will not work correctly with "setup.py develop".\n\n'
-                           'Please rename %s to %s to correct this problem.\n' + '-' * 78,
+                "Note: Your current .egg-info directory has a '-' in its name;"
+                '\nthis will not work correctly with "setup.py develop".\n\n'
+                'Please rename %s to %s to correct this problem.\n' + '-' * 78,
                 bei, self.egg_info
             )
             self.broken_egg_info = self.egg_info

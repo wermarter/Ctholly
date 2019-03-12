@@ -26,6 +26,7 @@ _open = open
 from distutils.errors import DistutilsError
 from pkg_resources import working_set
 
+
 __all__ = [
     "AbstractSandbox", "DirectorySandbox", "SandboxViolation", "run_setup",
 ]
@@ -157,8 +158,8 @@ def save_modules():
     del_modules = (
         mod_name for mod_name in sys.modules
         if mod_name not in saved
-           # exclude any encodings modules. See #285
-           and not mod_name.startswith('encodings.')
+        # exclude any encodings modules. See #285
+        and not mod_name.startswith('encodings.')
     )
     _clear_modules(del_modules)
 
@@ -373,7 +374,7 @@ class AbstractSandbox:
 
 
 if hasattr(os, 'devnull'):
-    _EXCEPTIONS = [os.devnull, ]
+    _EXCEPTIONS = [os.devnull,]
 else:
     _EXCEPTIONS = []
 
@@ -426,9 +427,9 @@ class DirectorySandbox(AbstractSandbox):
             self._active = False
             realpath = os.path.normcase(os.path.realpath(path))
             return (
-                    self._exempted(realpath)
-                    or realpath == self._sandbox
-                    or realpath.startswith(self._prefix)
+                self._exempted(realpath)
+                or realpath == self._sandbox
+                or realpath.startswith(self._prefix)
             )
         finally:
             self._active = active
@@ -466,7 +467,7 @@ class DirectorySandbox(AbstractSandbox):
 
 WRITE_FLAGS = functools.reduce(
     operator.or_, [getattr(_os, a, 0) for a in
-                   "O_WRONLY O_RDWR O_APPEND O_CREAT O_TRUNC O_TEMPORARY".split()]
+        "O_WRONLY O_RDWR O_APPEND O_CREAT O_TRUNC O_TEMPORARY".split()]
 )
 
 

@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['cli.py'],
-             pathex=['/home/werma/Playground/Ctholly'],
+             pathex=['D:\\Ctholly'],
              binaries=[],
              datas=[],
              hiddenimports=[],

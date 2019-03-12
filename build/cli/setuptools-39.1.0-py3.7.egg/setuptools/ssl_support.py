@@ -37,6 +37,7 @@ except AttributeError:
 
 is_available = ssl is not None and object not in (HTTPSHandler, HTTPSConnection)
 
+
 try:
     from ssl import CertificateError, match_hostname
 except ImportError:
@@ -48,8 +49,10 @@ except ImportError:
         match_hostname = None
 
 if not CertificateError:
+
     class CertificateError(ValueError):
         pass
+
 
 if not match_hostname:
 
@@ -105,7 +108,6 @@ if not match_hostname:
         pat = re.compile(r'\A' + r'\.'.join(pats) + r'\Z', re.IGNORECASE)
         return pat.match(hostname)
 
-
     def match_hostname(cert, hostname):
         """Verify that *cert* (in decoded format as returned by
         SSLSocket.getpeercert()) matches the *hostname*.  RFC 2818 and RFC 6125
@@ -136,15 +138,15 @@ if not match_hostname:
                         dnsnames.append(value)
         if len(dnsnames) > 1:
             raise CertificateError("hostname %r "
-                                   "doesn't match either of %s"
-                                   % (hostname, ', '.join(map(repr, dnsnames))))
+                "doesn't match either of %s"
+                % (hostname, ', '.join(map(repr, dnsnames))))
         elif len(dnsnames) == 1:
             raise CertificateError("hostname %r "
-                                   "doesn't match %r"
-                                   % (hostname, dnsnames[0]))
+                "doesn't match %r"
+                % (hostname, dnsnames[0]))
         else:
             raise CertificateError("no appropriate commonName or "
-                                   "subjectAltName fields were found")
+                "subjectAltName fields were found")
 
 
 class VerifyingHTTPSHandler(HTTPSHandler):
@@ -214,7 +216,6 @@ def once(func):
         if not hasattr(func, 'always_returns'):
             func.always_returns = func(*args, **kwargs)
         return func.always_returns
-
     return wrapper
 
 
@@ -246,9 +247,9 @@ def find_ca_bundle():
     """Return an existing CA bundle path, or None"""
     extant_cert_paths = filter(os.path.isfile, cert_paths)
     return (
-            get_win_certfile()
-            or next(extant_cert_paths, None)
-            or _certifi_where()
+        get_win_certfile()
+        or next(extant_cert_paths, None)
+        or _certifi_where()
     )
 
 

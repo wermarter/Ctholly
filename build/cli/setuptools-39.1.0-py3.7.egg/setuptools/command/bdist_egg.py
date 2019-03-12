@@ -23,12 +23,10 @@ try:
     # Python 2.7 or >=3.2
     from sysconfig import get_path, get_python_version
 
-
     def _get_purelib():
         return get_path("purelib")
 except ImportError:
     from distutils.sysconfig import get_python_lib, get_python_version
-
 
     def _get_purelib():
         return get_python_lib(False)
@@ -112,6 +110,7 @@ class bdist_egg(Command):
         self.set_undefined_options('bdist', ('dist_dir', 'dist_dir'))
 
         if self.egg_output is None:
+
             # Compute filename of the output egg
             basename = Distribution(
                 None, None, ei_cmd.egg_name, ei_cmd.egg_version,
@@ -134,7 +133,7 @@ class bdist_egg(Command):
                     realpath = os.path.realpath(item[0])
                     normalized = os.path.normcase(realpath)
                     if normalized == site_packages or normalized.startswith(
-                            site_packages + os.sep
+                        site_packages + os.sep
                     ):
                         item = realpath[len(site_packages) + 1:], item[1]
                         # XXX else: raise ???
@@ -292,18 +291,18 @@ class bdist_egg(Command):
         basename = os.path.basename(self.egg_output)
 
         header = (
-                     "#!/bin/sh\n"
-                     'if [ `basename $0` = "%(basename)s" ]\n'
-                     'then exec python%(pyver)s -c "'
-                     "import sys, os; sys.path.insert(0, os.path.abspath('$0')); "
-                     "from %(pkg)s import %(base)s; sys.exit(%(full)s())"
-                     '" "$@"\n'
-                     'else\n'
-                     '  echo $0 is not the correct name for this egg file.\n'
-                     '  echo Please rename it back to %(basename)s and try again.\n'
-                     '  exec false\n'
-                     'fi\n'
-                 ) % locals()
+            "#!/bin/sh\n"
+            'if [ `basename $0` = "%(basename)s" ]\n'
+            'then exec python%(pyver)s -c "'
+            "import sys, os; sys.path.insert(0, os.path.abspath('$0')); "
+            "from %(pkg)s import %(base)s; sys.exit(%(full)s())"
+            '" "$@"\n'
+            'else\n'
+            '  echo $0 is not the correct name for this egg file.\n'
+            '  echo Please rename it back to %(basename)s and try again.\n'
+            '  exec false\n'
+            'fi\n'
+        ) % locals()
 
         if not self.dry_run:
             mkpath(os.path.dirname(self.egg_output), dry_run=self.dry_run)
@@ -431,7 +430,7 @@ def scan_module(egg_dir, base, name, stubs):
     if 'inspect' in symbols:
         for bad in [
             'getsource', 'getabsfile', 'getsourcefile', 'getfile'
-                                                        'getsourcelines', 'findsource', 'getcomments', 'getframeinfo',
+            'getsourcelines', 'findsource', 'getcomments', 'getframeinfo',
             'getinnerframes', 'getouterframes', 'stack', 'trace'
         ]:
             if bad in symbols:

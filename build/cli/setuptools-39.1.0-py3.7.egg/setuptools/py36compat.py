@@ -12,7 +12,6 @@ class Distribution_parse_config_files:
     Do not edit the code in this class except to update functionality
     as implemented in distutils.
     """
-
     def parse_config_files(self, filenames=None):
         from configparser import ConfigParser
 
@@ -45,7 +44,7 @@ class Distribution_parse_config_files:
 
                 for opt in options:
                     if opt != '__name__' and opt not in ignore_options:
-                        val = parser.get(section, opt)
+                        val = parser.get(section,opt)
                         opt = opt.replace('-', '_')
                         opt_dict[opt] = (filename, val)
 
@@ -62,7 +61,7 @@ class Distribution_parse_config_files:
                 try:
                     if alias:
                         setattr(self, alias, not strtobool(val))
-                    elif opt in ('verbose', 'dry_run'):  # ugh!
+                    elif opt in ('verbose', 'dry_run'): # ugh!
                         setattr(self, opt, strtobool(val))
                     else:
                         setattr(self, opt, val)
@@ -74,6 +73,7 @@ if sys.version_info < (3,):
     # Python 2 behavior is sufficient
     class Distribution_parse_config_files:
         pass
+
 
 if False:
     # When updated behavior is available upstream,

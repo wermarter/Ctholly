@@ -15,7 +15,6 @@ from setuptools.extern import six
 try:
     # Attempt to use Cython for building extensions, if available
     from Cython.Distutils.build_ext import build_ext as _build_ext
-
     # Additionally, assert that the compiler module will load
     # also. Ref #1229.
     __import__('Cython.Compiler.Main')
@@ -56,7 +55,6 @@ if sys.platform == "darwin":
 elif os.name != 'nt':
     try:
         import dl
-
         use_stubs = have_rtld = hasattr(dl, 'RTLD_NOW')
     except ImportError:
         pass
@@ -109,9 +107,9 @@ class build_ext(_build_ext):
         if fullname in self.ext_map:
             ext = self.ext_map[fullname]
             use_abi3 = (
-                    six.PY3
-                    and getattr(ext, 'py_limited_api')
-                    and get_abi3_suffix()
+                six.PY3
+                and getattr(ext, 'py_limited_api')
+                and get_abi3_suffix()
             )
             if use_abi3:
                 so_ext = _get_config_var_837('EXT_SUFFIX')
@@ -298,7 +296,6 @@ if use_stubs or os.name == 'nt':
 else:
     # Build static libraries everywhere else
     libtype = 'static'
-
 
     def link_shared_object(
             self, objects, output_libname, output_dir=None, libraries=None,

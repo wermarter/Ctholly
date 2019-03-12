@@ -45,7 +45,7 @@ def get_metadata_version(dist_md):
           getattr(dist_md, 'python_requires', None) is not None):
         return StrictVersion('1.2')
     elif (dist_md.provides or dist_md.requires or dist_md.obsoletes or
-          dist_md.classifiers or dist_md.download_url):
+            dist_md.classifiers or dist_md.download_url):
         return StrictVersion('1.1')
 
     return StrictVersion('1.0')
@@ -244,7 +244,7 @@ def check_package_data(dist, attr, value):
             return
     raise DistutilsSetupError(
         attr + " must be a dictionary mapping package names to lists of "
-               "wildcard patterns"
+        "wildcard patterns"
     )
 
 
@@ -1018,7 +1018,7 @@ class Feature:
         if not self.available:
             raise DistutilsPlatformError(
                 self.description + " is required, "
-                                   "but is not available on this platform"
+                "but is not available on this platform"
             )
 
         dist.include(**self.extras)

@@ -15,6 +15,7 @@ from pkg_resources.extern.pyparsing import Literal as L  # noqa
 from ._compat import string_types
 from .specifiers import Specifier, InvalidSpecifier
 
+
 __all__ = [
     "InvalidMarker", "UndefinedComparison", "UndefinedEnvironmentName",
     "Marker", "default_environment",
@@ -74,24 +75,24 @@ class Op(Node):
 
 
 VARIABLE = (
-        L("implementation_version") |
-        L("platform_python_implementation") |
-        L("implementation_name") |
-        L("python_full_version") |
-        L("platform_release") |
-        L("platform_version") |
-        L("platform_machine") |
-        L("platform_system") |
-        L("python_version") |
-        L("sys_platform") |
-        L("os_name") |
-        L("os.name") |  # PEP-345
-        L("sys.platform") |  # PEP-345
-        L("platform.version") |  # PEP-345
-        L("platform.machine") |  # PEP-345
-        L("platform.python_implementation") |  # PEP-345
-        L("python_implementation") |  # undocumented setuptools legacy
-        L("extra")
+    L("implementation_version") |
+    L("platform_python_implementation") |
+    L("implementation_name") |
+    L("python_full_version") |
+    L("platform_release") |
+    L("platform_version") |
+    L("platform_machine") |
+    L("platform_system") |
+    L("python_version") |
+    L("sys_platform") |
+    L("os_name") |
+    L("os.name") |  # PEP-345
+    L("sys.platform") |  # PEP-345
+    L("platform.version") |  # PEP-345
+    L("platform.machine") |  # PEP-345
+    L("platform.python_implementation") |  # PEP-345
+    L("python_implementation") |  # undocumented setuptools legacy
+    L("extra")
 )
 ALIASES = {
     'os.name': 'os_name',
@@ -104,14 +105,14 @@ ALIASES = {
 VARIABLE.setParseAction(lambda s, l, t: Variable(ALIASES.get(t[0], t[0])))
 
 VERSION_CMP = (
-        L("===") |
-        L("==") |
-        L(">=") |
-        L("<=") |
-        L("!=") |
-        L("~=") |
-        L(">") |
-        L("<")
+    L("===") |
+    L("==") |
+    L(">=") |
+    L("<=") |
+    L("!=") |
+    L("~=") |
+    L(">") |
+    L("<")
 )
 
 MARKER_OP = VERSION_CMP | L("not in") | L("in")

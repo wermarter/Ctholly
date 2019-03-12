@@ -118,11 +118,11 @@ class setopt(option_base):
     description = "set an option in setup.cfg or another config file"
 
     user_options = [
-                       ('command=', 'c', 'command to set an option for'),
-                       ('option=', 'o', 'option to set'),
-                       ('set-value=', 's', 'value of the option'),
-                       ('remove', 'r', 'remove (unset) the value'),
-                   ] + option_base.user_options
+        ('command=', 'c', 'command to set an option for'),
+        ('option=', 'o', 'option to set'),
+        ('set-value=', 's', 'value of the option'),
+        ('remove', 'r', 'remove (unset) the value'),
+    ] + option_base.user_options
 
     boolean_options = option_base.boolean_options + ['remove']
 

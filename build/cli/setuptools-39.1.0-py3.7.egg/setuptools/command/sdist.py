@@ -114,9 +114,9 @@ class sdist(sdist_add_defaults, orig.sdist):
     #  has been fixed, so only override the method if we're using an earlier
     #  Python.
     has_leaky_handle = (
-            sys.version_info < (2, 7, 2)
-            or (3, 0) <= sys.version_info < (3, 1, 4)
-            or (3, 2) <= sys.version_info < (3, 2, 1)
+        sys.version_info < (2, 7, 2)
+        or (3, 0) <= sys.version_info < (3, 1, 4)
+        or (3, 2) <= sys.version_info < (3, 2, 1)
     )
     if has_leaky_handle:
         read_template = __read_template_hack

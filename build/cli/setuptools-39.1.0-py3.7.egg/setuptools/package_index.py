@@ -100,7 +100,7 @@ def distros_for_url(url, metadata=None):
         match = EGG_FRAGMENT.match(fragment)
         if match:
             for dist in interpret_distro_name(
-                    url, match.group(1), metadata, precedence=CHECKOUT_DIST
+                url, match.group(1), metadata, precedence=CHECKOUT_DIST
             ):
                 yield dist
 
@@ -213,8 +213,6 @@ def unique_values(func):
 
 
 REL = re.compile(r"""<([^>]*\srel\s*=\s*['"]?([^'">]+)[^>]*)>""", re.I)
-
-
 # this line is here to fix emacs' cruddy broken syntax highlighting
 
 
@@ -303,16 +301,16 @@ class PackageIndex(Environment):
             ca_bundle=None, verify_ssl=True, *args, **kw
     ):
         Environment.__init__(self, *args, **kw)
-        self.index_url = index_url + "/"[:not index_url.endswith('/')]
+        self.index_url = index_url + "/" [:not index_url.endswith('/')]
         self.scanned_urls = {}
         self.fetched_urls = {}
         self.package_pages = {}
         self.allows = re.compile('|'.join(map(translate, hosts))).match
         self.to_scan = []
         use_ssl = (
-                verify_ssl
-                and ssl_support.is_available
-                and (ca_bundle or ssl_support.find_ca_bundle())
+            verify_ssl
+            and ssl_support.is_available
+            and (ca_bundle or ssl_support.find_ca_bundle())
         )
         if use_ssl:
             self.opener = ssl_support.opener_for(ca_bundle)
@@ -527,10 +525,10 @@ class PackageIndex(Environment):
         """Add `urls` to the list that will be prescanned for searches"""
         for url in urls:
             if (
-                    self.to_scan is None  # if we have already "gone online"
-                    or not URL_SCHEME(url)  # or it's a local file/directory
-                    or url.startswith('file:')
-                    or list(distros_for_url(url))  # or a direct package link
+                self.to_scan is None  # if we have already "gone online"
+                or not URL_SCHEME(url)  # or it's a local file/directory
+                or url.startswith('file:')
+                or list(distros_for_url(url))  # or a direct package link
             ):
                 # then go ahead and process it now
                 self.scan_url(url)
@@ -628,8 +626,8 @@ class PackageIndex(Environment):
                     continue
 
                 test = (
-                        dist in req
-                        and (dist.precedence <= SOURCE_DIST or not source)
+                    dist in req
+                    and (dist.precedence <= SOURCE_DIST or not source)
                 )
                 if test:
                     loc = self.download(dist.location, tmpdir)
