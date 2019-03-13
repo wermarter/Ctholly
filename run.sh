@@ -11,4 +11,4 @@ echo -en "\033]0;Ctholly\a"
 
 # Run main.py in venv
 source ${DIR}/venv/bin/activate
-python ${DIR}/ctholly/main.py
+python ${DIR}/cli.py

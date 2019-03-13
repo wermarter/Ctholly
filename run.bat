@@ -1,2 +1,2 @@
-venv_win\Scripts\python.exe ctholly\main.py
+venv_win\Scripts\python.exe cli.py
 cmd /k
