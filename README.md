@@ -9,4 +9,5 @@
 + Hit `Enter` and enjoy
 
 ## How to use "the simple way"
-There's actually a pre-built exe file for Windows users [here]("https://drive.google.com/open?id=12AriFsA-CyDwuL4d3DLAyZPze9JrxKh7")
+There's actually a pre-built exe file for Windows users at 
+https://drive.google.com/open?id=12AriFsA-CyDwuL4d3DLAyZPze9JrxKh7
