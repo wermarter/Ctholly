@@ -81,7 +81,11 @@ def fetch_hvn(url, title=None):
     else:
 
         # Get series title and chapters title
-        title = re.findall(r"<title>(.+) (\[.+\])? \| Đọc Online</title>", html)[0][0][15:]
+        title = re.findall(r"<title>(.+) (\[.+\])? \| Đọc Online</title>", html)
+        if len(title) == 0:
+            title = re.findall(r"<title>(.+) \| Đọc Online</title>", html)[0][15:]
+        else:
+            title = title[0][0][15:]
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
         assert len(chap_titles) == len(chap_urls)

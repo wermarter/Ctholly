@@ -23,7 +23,7 @@ def download_from_url(url):
 def download_report(queue, total_size):
     downloaded = 0
     t = tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024)
-    while downloaded < total_size:  # [Issue] files failing to be fetched result in interminable condition
+    while downloaded < total_size:
         msg = queue.get()
         if msg == "DONE":
             break
@@ -263,6 +263,7 @@ class BatchDownloader(threading.Thread):
         pool.close()
         pool.join()
         if self.report:
+            self._q.put("DONE")  # Force-close the reporter
             reporter.join()
 
         # Error ouput can be fed back into input
