@@ -2,7 +2,6 @@ import re
 import requests
 import os
 import sys
-import string
 import shutil
 
 from rfc6266 import parse_headers
@@ -11,8 +10,6 @@ from os.path import (isfile, join, getsize)
 from PIL import Image
 from tqdm import tqdm
 from multiprocessing import Pool
-
-VALID_CHARS = "-_.()[] %s%s" % (string.ascii_letters, string.digits)
 
 
 ####################
@@ -90,10 +87,17 @@ def split_index(n, m, start=0):
     yield start + part_size * (m - 1), n  # last partition may not have the same size
 
 
+def validify_name(name, include_path=False):
+    """Remove invalid character from name string."""
+
+    _dict = {"/": "\\", "\\": "/"}
+    return ''.join(c for c in name if not (c in ("?%*:|\"<>." + os.sep if not include_path else _dict[os.sep])))
+
+
 def filename_check(fn, include_path=False, check_progress=False):
     """Check for filename conflicts and fix them."""
 
-    # fn = ''.join(c for c in fn if c in VALID_CHARS+(os.sep if include_path else ""))
+    fn = validify_name(fn, include_path)
 
     if include_path:
         root_folder = os.path.split(fn)[0]

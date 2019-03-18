@@ -30,7 +30,7 @@ _HTM = "https://hitomi.la"
 
 
 def fetch_htm(url):
-    """Download single manga HTM."""
+    """Download single chap from HTM."""
 
     # Determine image server (thanks to Hentoid)
     url = url.replace('galleries', 'reader')
@@ -42,6 +42,7 @@ def fetch_htm(url):
     # Get title
     html = utils.fetch_html(url)
     title = re.findall(r"<title>(.+) \| Hitomi.la</title>", html)[0]
+    title = utils.validify_name(title)
 
     # Get url of images
     res = re.findall(r"<div class=\"img-url\">//g(.+?)</div>", html)
@@ -86,8 +87,10 @@ def fetch_hvn(url, title=None):
             title = re.findall(r"<title>(.+) \| Đọc Online</title>", html)[0][15:]
         else:
             title = title[0][0][15:]
+        title = utils.validify_name(title)
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
+        chap_titles = [utils.validify_name(chap_title) for chap_title in chap_titles]
         assert len(chap_titles) == len(chap_urls)
         if len(chap_titles) == 1:
             return fetch_hvn(_HVN + chap_urls[0])
