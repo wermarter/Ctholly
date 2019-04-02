@@ -117,10 +117,7 @@ class FileDownloader(threading.Thread):
 
         # Preprocess file destination
         file_dest = os.path.normpath(file_dest)
-        if filename:
-            file_dest = os.path.join(file_dest, filename)
-        else:
-            file_dest = os.path.join(file_dest, _filename)
+        file_dest = os.path.join(file_dest, filename if filename else _filename)
         file_dest, start_pos = filename_check(file_dest, include_path=True, check_progress=True)
 
         # Download resumption
