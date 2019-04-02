@@ -11,19 +11,20 @@ import shutil
 
 logging.captureWarnings(True)
 
+# Set min resolution for cropping images
+MIN_RES = 720
+
 
 def download_manga(title, img_urls):
     """The process of downloading a manga."""
 
     print('Fetching {} ({})...'.format(title, len(img_urls)))
     bd = BatchDownloader(img_urls, title, 'numeric', n_thread=4, n_file=8)
-    # utils.clear_lines(2)
     print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
-    # utils.clear_lines(2)
-    print('Cropping images to 720p...')
-    utils.crop_imgs(bd.file_dests, 720)
-    # utils.clear_lines(2)
+    if MIN_RES:
+        print('Cropping images...')
+        utils.crop_imgs(bd.file_dests, MIN_RES)
 
 
 _HTM = "https://hitomi.la"
@@ -128,6 +129,10 @@ def main(cmd=None):
             cmd = args[0]
         else:
             cmd = str(input('> '))
+
+    # Get MIN_RES
+    global MIN_RES
+    MIN_RES = int(input("> MIN_RES="))
 
     # Process single url
     if utils.is_html(cmd):
