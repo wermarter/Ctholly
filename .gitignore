@@ -1,7 +1,5 @@
 __pycache__/
 .idea/
-build/
-cli.spec
 Ctholly.iml
 *.pyc
 *.txt
