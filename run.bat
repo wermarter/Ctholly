@@ -1,2 +1,3 @@
-venv\Scripts\python.exe cli.py
+conda activate Ctholly
+python cli.py
 cmd /k
