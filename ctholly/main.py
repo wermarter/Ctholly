@@ -14,12 +14,15 @@ logging.captureWarnings(True)
 # Set min resolution for cropping images
 MIN_RES = 720
 
+# Trigger for error
+ERROR = False
 
-def download_manga(title, img_urls):
+
+def download_manga(url, title, img_urls):
     """The process of downloading a manga."""
 
     print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=4, n_file=8)
+    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=1, n_file=8, headers={'referer': url})
     print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
     if MIN_RES:
@@ -50,7 +53,7 @@ def fetch_htm(url):
     img_urls = [img_prefix + s for s in res]
 
     # Execute download
-    download_manga(title, img_urls)
+    download_manga(url, title, img_urls)
 
 
 _HVN = "https://hentaivn.net"
@@ -77,7 +80,7 @@ def fetch_hvn(url, title=None):
         img_urls = [(img_server + img) for img in img_urls]
 
         # Execute download
-        download_manga(title, img_urls)
+        download_manga(url, title, img_urls)
 
     # No, series title detected
     else:
@@ -134,8 +137,8 @@ def main(cmd=None):
             cmd = str(input('> '))
 
     # Get MIN_RES
-    global MIN_RES
-    MIN_RES = int(input("> MIN_RES="))
+    # global MIN_RES
+    # MIN_RES = int(input("> MIN_RES="))
 
     # Process single url
     if utils.is_html(cmd):

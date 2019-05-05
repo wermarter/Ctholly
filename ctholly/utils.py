@@ -37,14 +37,14 @@ def join_files(fn, files, verbose=True):
     os.rename(files[0], fn)
 
 
-def get_file_info(url, max_tries=5):
+def get_file_info(url, max_tries=5, headers={}):
     """Get filename, GzipSize and check if "Accept-Ranges" from the url."""
 
     count = max_tries
     filesize = 0
     while count > 0:
         try:
-            header = requests.head(url).headers
+            header = requests.head(url, headers=headers).headers
             filesize = int(header['content-length'])
             assert filesize > 0
             break
