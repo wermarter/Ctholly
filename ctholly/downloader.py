@@ -153,7 +153,6 @@ class FileDownloader(threading.Thread):
                 self.headers.update({'Range': 'bytes=%d-%d' % (self.start_pos[i] + start, end - 1)})
             part_name = self.file_dest + '.part' + str(i)
             part_names.append(part_name)
-            print(part_name, self.headers)
             _thread = DownloadThread(self._q, self.url, part_name, self.headers)
             _thread.start()
             download_threads.append(_thread)
