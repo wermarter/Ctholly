@@ -65,7 +65,7 @@ class DownloadThread(threading.Thread):
         tries, res = 0, None
         while tries < 3:
             try:
-                res = requests.get(self.url, stream=True, headers=self.headers, verify=False, allow_redirects=True)
+                res = requests.get(self.url, headers=self.headers, verify=False, allow_redirects=True)
                 break
             except:
                 tries += 1

@@ -22,7 +22,7 @@ def download_manga(url, title, img_urls):
     """The process of downloading a manga."""
 
     print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=1, n_file=8, headers={'referer': url})
+    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=2, n_file=4, headers={'referer': url})
     print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
     if MIN_RES:
