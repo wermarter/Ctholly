@@ -64,7 +64,7 @@ class DownloadThread(threading.Thread):
     def try_to_get(self): 
         tries, res = 0, None
         while tries < 3:
-            try:
+            try: # stream=False
                 res = requests.get(self.url, headers=self.headers, verify=False, allow_redirects=True)
                 break
             except:
@@ -80,7 +80,6 @@ class DownloadThread(threading.Thread):
                 if chunk:
                     out_file.write(chunk)
                     self.q.put((self.filename, len(chunk)))
-            res.close()
 
 
 class FileDownloader(threading.Thread):
@@ -88,7 +87,7 @@ class FileDownloader(threading.Thread):
     Can function normally with run() or start() as thread.
     * Auto resumption if file existed."""
 
-    def __init__(self, url, file_dest='.', filename=None, n_thread=4, report=True, overwrite=False, headers={}):
+    def __init__(self, url, file_dest='.', filename=None, n_thread=8, report=True, overwrite=False, headers={}):
         super().__init__()
 
         # Report can be handled externally by assigning a Queue to it
@@ -191,7 +190,7 @@ class BatchDownloader(threading.Thread):
     """A class for downloading whole sh*t of files. 
     Can function normally with run() or start() as thread."""
 
-    def __init__(self, urls, file_dest='.', filenames=None, n_thread=2, n_file=4, report=True, headers={}):
+    def __init__(self, urls, file_dest='.', filenames=None, n_thread=4, n_file=4, report=True, headers={}):
         super().__init__()
 
         # Filenames preprocessing
