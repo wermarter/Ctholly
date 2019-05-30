@@ -1,6 +1,6 @@
 # coding: utf8
 
-from ctholly.downloader import (BatchDownloader, download_from_url)
+from ctholly.downloader import (BatchDownloader, download_file)
 
 import os
 from ctholly import utils
@@ -12,7 +12,7 @@ import shutil
 logging.captureWarnings(True)
 
 # Set min resolution for cropping images
-MIN_RES = 720
+MIN_RES = None
 
 # Trigger for error
 ERROR = False
@@ -22,10 +22,10 @@ def download_manga(url, title, img_urls):
     """The process of downloading a manga."""
 
     print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=2, n_file=4, headers={'referer': url})
+    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=1, n_file=8, headers={'referer': url})
     print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
-    if MIN_RES:
+    if not(MIN_RES is None):
         print('Cropping images...')
         utils.crop_imgs(bd.file_dests, MIN_RES)
 
@@ -122,7 +122,7 @@ def fetch(url):
     elif url.startswith(_HTM):
         fetch_htm(url)
     else:
-        download_from_url(url)
+        download_file(url)
 
 
 def main(cmd=None):
@@ -159,7 +159,7 @@ def main(cmd=None):
 
     # Download normal file
     else:
-        download_from_url(cmd)
+        download_file(cmd)
 
 
 if __name__ == '__main__':

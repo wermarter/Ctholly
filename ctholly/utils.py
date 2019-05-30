@@ -1,20 +1,20 @@
-import re
-import requests
 import os
-import sys
+import re
 import shutil
-
-from rfc6266 import parse_headers
-from urllib.parse import (urlsplit, urlparse)
-from os.path import (isfile, join, getsize)
-from PIL import Image
-from tqdm import tqdm
+import sys
 from multiprocessing import Pool
+from os.path import getsize, isfile, join
+from urllib.parse import urlparse, urlsplit
 
+import requests
+from PIL import Image
+from rfc6266 import parse_headers
+from tqdm import tqdm
 
 ####################
 # helper functions #
 ####################
+
 
 def clear_lines(n=1):
     """Clear lines before this line. Only works in terminal."""
@@ -33,7 +33,7 @@ def join_files(fn, files, verbose=True):
     for i in range(len(files))[1:]:
         with open(files[0], 'ab') as file, open(files[i], 'rb') as content:
             file.write(content.read())
-        os.remove(files[i])
+        # os.remove(files[i])
     os.rename(files[0], fn)
 
 
@@ -53,7 +53,8 @@ def get_file_info(url, max_tries=5, headers={}):
     if count == 0:
         raise Exception("Cannot fetch info " + url)
     try:
-        fn = parse_headers(header.get('content-disposition', None)).filename_unsafe
+        fn = parse_headers(header.get(
+            'content-disposition', None)).filename_unsafe
         assert not (fn is None)
     except:
         fn = get_filename_url(url)
@@ -64,7 +65,8 @@ def get_filename_url(url):
     """"Get filename from pure url."""
 
     parts = urlsplit(url)
-    fn = parts.path.split('/')[-1] if not 'url=' in parts.query else re.findall(r"url=(.+?)[\?$]", parts.query)[0]
+    fn = parts.path.split(
+        '/')[-1] if not 'url=' in parts.query else re.findall(r"url=(.+?)[\?$]", parts.query)[0]
     return requests.utils.unquote(fn)
 
 
@@ -84,7 +86,8 @@ def split_index(n, m, start=0):
     part_size = (n - start) // m
     for i in range(m - 1):
         yield start + part_size * i, start + part_size * (i + 1)
-    yield start + part_size * (m - 1), n  # last partition may not have the same size
+    # last partition may not have the same size
+    yield start + part_size * (m - 1), n
 
 
 def validify_name(name, include_path=False):
@@ -94,7 +97,7 @@ def validify_name(name, include_path=False):
     return ''.join(c for c in name if not (c in ("?%*:|\"<>." + os.sep if not include_path else _dict[os.sep])))
 
 
-def filename_check(fn, include_path=False, check_progress=False):
+def filename_check(fn, include_path=False):
     """Check for filename conflicts and fix them."""
 
     fn = validify_name(fn, include_path)
@@ -112,19 +115,19 @@ def filename_check(fn, include_path=False, check_progress=False):
             i += 1
             test_name = name + ' (%s)' % str(i) + ext
         fn = test_name
-
-    if check_progress:
-        file_sz = []
-        i = 0
-        test_name = fn + '.part0'
-        while os.path.isfile(test_name):
-            i += 1
-            file_sz.append(getsize(test_name))
-            test_name = fn + '.part' + str(i)
-        return fn, file_sz
-
     return fn
 
+def check_progress(fn):
+    """Returns size of downloaded parts."""
+    
+    file_sz = []
+    i = 0
+    test_name = fn + '.part0'
+    while os.path.isfile(test_name):
+        i += 1
+        file_sz.append(getsize(test_name))
+        test_name = fn + '.part' + str(i)
+    return file_sz
 
 def sizeof_fmt(num, suffix='B'):
     """Format user-friendly filesize in kibibyte. (deprecated)"""
@@ -172,7 +175,8 @@ def recompile_htm(fn, backup=False):
         if isfile(f):
             files.append(f)
     indexes = build_index(len(files), suffix='.jpg')
-    sorted_files = sorted(files, key=lambda x: int(''.join([it for it in x if it.isdigit()])))
+    sorted_files = sorted(files, key=lambda x: int(
+        ''.join([it for it in x if it.isdigit()])))
     for (file, index) in zip(sorted_files, indexes):
         crop_to_720p(file)
         os.rename(file, join(tmp_dir, index))

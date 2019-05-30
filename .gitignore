@@ -4,3 +4,4 @@ venv/
 .vscode/settings.json
 COMIC*
 ctholly.errors
+.vscode/
