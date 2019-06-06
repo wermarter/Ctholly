@@ -1,16 +1,15 @@
 import os
 import re
 import shutil
-from multiprocessing import Pool
-from os.path import getsize, isfile, join
-from urllib.parse import urlparse, urlsplit
-
 import requests
 from PIL import Image
 from requests.adapters import HTTPAdapter
 from rfc6266 import parse_headers
 from tqdm import tqdm
 from urllib3.util.retry import Retry
+from multiprocessing import Pool
+from os.path import getsize, isfile, join
+from urllib.parse import urlparse, urlsplit
 
 
 # https://www.peterbe.com/plog/best-practice-with-retries-with-requests
@@ -35,14 +34,13 @@ def retry_session(
 
 
 def join_files(dest_file, src_files, verbose=True):
-    print(dest_file, src_files)
     if verbose:
         print(f"Joining to {dest_file}")
     for src_file in src_files:
         with open(dest_file, "ab") as file:
             with open(src_file, "rb") as content:
                 file.write(content.read())
-        # os.remove(src_file)
+        os.remove(src_file)
 
 
 def get_file_info(url, input_header=None):

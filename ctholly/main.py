@@ -1,33 +1,15 @@
 # coding: utf8
-
 import logging
 import os
 import re
 import shutil
 import sys
-
 from ctholly import utils
-from ctholly.downloader import (BatchDownloader, download_file)
+from ctholly.downloader import (download_manga,
+                                download_file,
+                                redownload_error)
 
 logging.captureWarnings(True)
-
-# Set min resolution for cropping images
-MIN_RES = None
-
-# Trigger for error
-ERROR = False
-
-
-def download_manga(url, title, img_urls):
-    """The process of downloading a manga."""
-
-    print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=3, n_file=8, headers={'referer': url})
-    print('Downloading {} ({})...'.format(title, len(img_urls)))
-    bd.run()
-    if not(MIN_RES is None):
-        print('Cropping images...')
-        utils.crop_imgs(bd.file_dests, MIN_RES)
 
 
 _HTM = "https://hitomi.la"
@@ -136,26 +118,26 @@ def main(cmd=None):
         else:
             cmd = str(input('> '))
 
-    # Get MIN_RES
-    # global MIN_RES
-    # MIN_RES = int(input("> MIN_RES="))
-
     # Process single url
     if utils.is_html(cmd):
         fetch(cmd)
 
     # Recompile zip file (deprecated)
-    elif cmd.endswith('.zip'):
+    elif cmd.endswith(".zip"):
         utils.recompile_htm(cmd, backup=False)
 
     # Open text file containing urls
     elif os.path.isfile(cmd):
         with open(cmd, 'r') as f:
             cmds = [line.strip() for line in f.readlines()]
-            n = len(cmds)
-            for i, cmd in enumerate(cmds):
-                print('[%d/%d] %s' % (i + 1, n, cmd))
-                main(cmd)
+            if cmd == "ctholly.errors":
+                errors = [error.split('|') for error in cmds]
+                return redownload_error(errors)
+            else:
+                n = len(cmds)
+                for i, cmd in enumerate(cmds):
+                    print(f"[{i + 1}/{n}] {cmd}")
+                    main(cmd)
 
     # Download normal file
     else:
