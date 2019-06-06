@@ -3,21 +3,28 @@ import threading
 from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
 
-import requests
 from tqdm import tqdm
 
-from ctholly.utils import (build_index_ext, filename_check, get_file_info,
-                           join_files, split_index, check_progress)
+from ctholly.utils import (build_index_filename,
+                           fix_filename,
+                           get_file_info,
+                           join_files,
+                           split_index,
+                           get_size_downloaded,
+                           retry_session)
 
 
 def download_file(url):
-    dl = FileDownloader(url, n_thread=8)
-    dl.run()
+    downloader = FileDownloader(url, n_thread=2)
+    downloader.run()
 
 
-def download_report(queue, total_size):
+def report_download_queue(queue, total_size):
     downloaded = 0
-    t = tqdm(total=total_size, unit='B', unit_scale=True, unit_divisor=1024)
+    t = tqdm(total=total_size,
+             unit='B',
+             unit_scale=True,
+             unit_divisor=1024)
     while downloaded < total_size:
         msg = queue.get()
         if msg == "DONE":
@@ -30,37 +37,25 @@ def download_report(queue, total_size):
 
 
 class DownloadThread(threading.Thread):
-    """A simple download worker working as thread.
-    Report (filename, downloaded) to queue q."""
-
-    def __init__(self, q, url, filename, headers=None):
+    def __init__(self, report_queue, url, filename, headers=None):
         super().__init__()
-        self.q = q
+        self.report_queue = report_queue
         self.url = url
-        self.headers = headers
         self.filename = filename
+        self.headers = dict(headers)
 
     def try_to_get(self):
-        tries, res = 0, None
-        while tries < 3:
-            try:
-                res = requests.get(self.url, stream=True, headers=self.headers, verify=False, allow_redirects=True)
-                break
-            except:
-                tries += 1
-        return res
+        session = retry_session()
+        response = session.get(self.url, stream=True, headers=self.headers,
+                               verify=False, allow_redirects=True)
+        return response
 
     def run(self):
-        # res = self.try_to_get()
-        res = requests.get(self.url, stream=True, headers=self.headers, verify=False, allow_redirects=True)
-        if res is None:
-            raise Exception("Max retries exceeded.")
+        response = self.try_to_get()
         with open(self.filename, 'ab') as out_file:
-            for chunk in res.iter_content(1024*1024):
-                if chunk:
-                    out_file.write(chunk)
-                    out_file.flush()
-                    self.q.put((self.filename, len(chunk)))
+            for chunk in response.iter_content(1024 * 1024):
+                out_file.write(chunk)
+                self.report_queue.put((self.filename, len(chunk)))
 
 
 class FileDownloader(threading.Thread):
@@ -68,7 +63,13 @@ class FileDownloader(threading.Thread):
     Can function normally with run() or start() as thread.
     * Auto resumption if file existed."""
 
-    def __init__(self, url, file_dest='.', filename=None, n_thread=8, report=True, overwrite=False, headers={}):
+    def __init__(self, url,
+                 directory='.',
+                 filename=None,
+                 n_thread=8,
+                 report=True,
+                 overwrite=False,
+                 headers=None):
         super().__init__()
 
         # Report can be handled externally by assigning a Queue to it
@@ -79,9 +80,13 @@ class FileDownloader(threading.Thread):
             self.report = report
             self._q = Queue()
 
+        self.headers = headers or {}
+
         # Check for multithread support
         try:
-            _filename, filesize, accept_range = get_file_info(url, headers=headers)
+            _filename, filesize, accept_range = get_file_info(
+                url, input_header=self.headers
+            )
         except:
             self._non_downloadable = True
             if self.report:
@@ -97,10 +102,10 @@ class FileDownloader(threading.Thread):
                 print('[WARN] Multithread downloading not supported for this file.')
 
         # Preprocess file destination
-        file_dest = os.path.normpath(file_dest)
-        file_dest = os.path.join(file_dest, filename or _filename)
-        file_dest = filename_check(file_dest, include_path=True)
-        start_pos = check_progress(file_dest)
+        directory = os.path.normpath(directory)
+        filename = fix_filename(filename or _filename)
+        filename = os.path.join(directory, filename)
+        start_pos = get_size_downloaded(filename)
 
         # Download resumption
         if not overwrite:
@@ -113,12 +118,11 @@ class FileDownloader(threading.Thread):
                 self.start_pos = start_pos
                 n_thread = len(start_pos)
 
-        self.file_dest = file_dest
+        self.filename = filename
         self.url = url
         self.filesize = filesize
         self.n_thread = n_thread
         self.multithread = multithread
-        self.headers = headers
 
     def run(self):
 
@@ -129,13 +133,15 @@ class FileDownloader(threading.Thread):
         # Start download threads
         download_threads = []
         part_names = []
+        part_sizes = []
 
         for i, (start, end) in enumerate(split_index(self.filesize, self.n_thread)):
             if self.multithread:
                 self.headers.update(
                     {'Range': 'bytes=%d-%d' % (self.start_pos[i] + start, end - 1)})
-            part_name = self.file_dest + '.part' + str(i)
+            part_name = self.filename + '.part' + str(i)
             part_names.append(part_name)
+            part_sizes.append(end - start + 1)
             _thread = DownloadThread(
                 self._q, self.url, part_name, self.headers)
             _thread.start()
@@ -143,7 +149,7 @@ class FileDownloader(threading.Thread):
 
         # Report progress
         if self.report:
-            report_thread = threading.Thread(target=download_report,
+            report_thread = threading.Thread(target=report_download_queue,
                                              args=(self._q, self.filesize - sum(self.start_pos)))
             report_thread.start()
 
@@ -156,18 +162,25 @@ class FileDownloader(threading.Thread):
             self._q.put('DONE')
             report_thread.join()
 
+        # Check part size
+        for (fname, fsize) in zip(part_names, part_sizes):
+            actual_size = os.path.getsize(fname)
+            if fsize != fsize:
+                print(f"{actual_size} <> {fsize}")
+                return
+
         # Join downloaded parts of file
-        join_files(self.file_dest, part_names, self.report)
+        join_files(self.filename, part_names, self.report)
 
         # Filesize check
-        actual_size = os.path.getsize(self.file_dest)
+        actual_size = os.path.getsize(self.filename)
         if actual_size != self.filesize:
             if self.report:
                 delete = input(
                     "Size mismatched [%s/%s]. Delete? " % (actual_size, self.filesize))
                 delete = True if str(delete).upper()[0] == 'Y' else False
                 if delete:
-                    os.remove(self.file_dest)
+                    os.remove(self.filename)
             else:
                 raise Exception(
                     "Size mismatched [%s/%s]." % (actual_size, self.filesize))
@@ -184,7 +197,7 @@ class BatchDownloader(threading.Thread):
         if filenames is None:
             filenames = [None] * len(urls)
         if filenames == 'numeric':
-            filenames = build_index_ext(urls)
+            filenames = build_index_filename(urls)
 
         # Report can be handled externally by assigning a Queue to it
         if type(report) == Queue:
@@ -231,7 +244,7 @@ class BatchDownloader(threading.Thread):
         fd = FileDownloader(url, self.file_dest, filename,
                             self.n_thread, self._q, headers=self.headers)
         if fd.filesize > 0:
-            self.file_dests.append(fd.file_dest)
+            self.file_dests.append(fd.filename)
             self.downloaders.append(fd)
         return fd.filesize
 
@@ -240,7 +253,7 @@ class BatchDownloader(threading.Thread):
         # Prepare report
         if self.report:
             reporter = threading.Thread(
-                target=download_report, args=(self._q, self.batch_size))
+                target=report_download_queue, args=(self._q, self.batch_size))
             reporter.start()
 
         # Start download

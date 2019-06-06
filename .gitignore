@@ -1,7 +1,5 @@
 __pycache__/
-venv/
 *.txt
-.vscode/settings.json
-COMIC*
+*COMIC*
 ctholly.errors
-.vscode/
+.idea/

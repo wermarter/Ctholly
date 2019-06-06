@@ -1,13 +1,13 @@
 # coding: utf8
 
-from ctholly.downloader import (BatchDownloader, download_file)
-
-import os
-from ctholly import utils
-import sys
-import re
 import logging
+import os
+import re
 import shutil
+import sys
+
+from ctholly import utils
+from ctholly.downloader import (BatchDownloader, download_file)
 
 logging.captureWarnings(True)
 
@@ -22,7 +22,7 @@ def download_manga(url, title, img_urls):
     """The process of downloading a manga."""
 
     print('Fetching {} ({})...'.format(title, len(img_urls)))
-    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=1, n_file=8, headers={'referer': url})
+    bd = BatchDownloader(img_urls, title, 'numeric', n_thread=3, n_file=8, headers={'referer': url})
     print('Downloading {} ({})...'.format(title, len(img_urls)))
     bd.run()
     if not(MIN_RES is None):
@@ -44,9 +44,9 @@ def fetch_htm(url):
     img_prefix = "https://" + ("a" if (book_id % 2 == 0) else "b") + "a"
 
     # Get title
-    html = utils.fetch_html(url)
+    html = utils.get_html_text(url)
     title = re.findall(r"<title>(.+) \| Hitomi.la</title>", html)[0]
-    title = utils.validify_name(title)
+    title = utils.remove_invalid_char(title)
 
     # Get url of images
     res = re.findall(r"<div class=\"img-url\">//g(.+?)</div>", html)
@@ -62,7 +62,7 @@ _HVN = "https://hentaivn.net"
 def fetch_hvn(url, title=None):
     """Download single-chap, one-shot or a-series from HVN."""
 
-    html = utils.fetch_html(url)
+    html = utils.get_html_text(url)
 
     # Try to get title for chapter
     if not title:
@@ -91,10 +91,10 @@ def fetch_hvn(url, title=None):
             title = re.findall(r"<title>(.+) \| Đọc Online</title>", html)[0][15:]
         else:
             title = title[0][0][15:]
-        title = utils.validify_name(title)
+        title = utils.remove_invalid_char(title)
         chap_urls = re.findall(r"href=\"(.+?)\"><h2 class=\"chuong_t\"", html)
         chap_titles = re.findall(r"<h2 class=\"chuong_t\".+?>(.+?)</h2>", html)
-        chap_titles = [utils.validify_name(chap_title) for chap_title in chap_titles]
+        chap_titles = [utils.remove_invalid_char(chap_title) for chap_title in chap_titles]
         assert len(chap_titles) == len(chap_urls)
         if len(chap_titles) == 1:
             return fetch_hvn(_HVN + chap_urls[0])

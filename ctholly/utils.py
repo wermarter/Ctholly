@@ -1,148 +1,137 @@
 import os
 import re
 import shutil
-import sys
 from multiprocessing import Pool
 from os.path import getsize, isfile, join
 from urllib.parse import urlparse, urlsplit
 
 import requests
 from PIL import Image
+from requests.adapters import HTTPAdapter
 from rfc6266 import parse_headers
 from tqdm import tqdm
-
-####################
-# helper functions #
-####################
+from urllib3.util.retry import Retry
 
 
-def clear_lines(n=1):
-    """Clear lines before this line. Only works in terminal."""
+# https://www.peterbe.com/plog/best-practice-with-retries-with-requests
+def retry_session(
+        retries=3,
+        backoff_factor=0.3,
+        status_forcelist=(500, 502, 504),
+        session=None,
+):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
-    sys.stdout.write("\033[K")  # Clear
-    for _ in range(n):
-        sys.stdout.write("\033[F")  # Move up
-        sys.stdout.write("\033[K")  # Clear
 
-
-def join_files(fn, files, verbose=True):
-    """Join multiple files into one file."""
-
+def join_files(dest_file, src_files, verbose=True):
+    print(dest_file, src_files)
     if verbose:
-        print('Joining to', fn)
-    for i in range(len(files))[1:]:
-        with open(files[0], 'ab') as file, open(files[i], 'rb') as content:
-            file.write(content.read())
-        # os.remove(files[i])
-    os.rename(files[0], fn)
+        print(f"Joining to {dest_file}")
+    for src_file in src_files:
+        with open(dest_file, "ab") as file:
+            with open(src_file, "rb") as content:
+                file.write(content.read())
+        # os.remove(src_file)
 
 
-def get_file_info(url, max_tries=5, headers={}):
-    """Get filename, GzipSize and check if "Accept-Ranges" from the url."""
+def get_file_info(url, input_header=None):
+    header = get_header(url, input_header or {})
+    filesize = int(header["content-length"])
+    filename = get_filename(url, header)
+    accept_ranges = header.get("Accept-Ranges") == "bytes"
+    return filename, filesize, accept_ranges
 
-    count = max_tries
-    filesize = 0
-    while count > 0:
-        try:
-            header = requests.head(url, headers=headers).headers
-            filesize = int(header['content-length'])
-            assert filesize > 0
-            break
-        except:
-            count -= 1
-    if count == 0:
-        raise Exception("Cannot fetch info " + url)
+
+def get_filename(url, header):
     try:
-        fn = parse_headers(header.get(
-            'content-disposition', None)).filename_unsafe
-        assert not (fn is None)
-    except:
-        fn = get_filename_url(url)
-    return fn, filesize, (header.get('Accept-Ranges', '') == 'bytes')
+        filename = parse_headers(header.get("content-disposition"))
+        filename = filename.filename_unsafe
+        assert filename is not None
+    except AssertionError:
+        filename = get_filename_from_url(url)
+    return filename
 
 
-def get_filename_url(url):
-    """"Get filename from pure url."""
-
-    parts = urlsplit(url)
-    fn = parts.path.split(
-        '/')[-1] if not 'url=' in parts.query else re.findall(r"url=(.+?)[\?$]", parts.query)[0]
-    return requests.utils.unquote(fn)
+def get_header(url, headers):
+    session = retry_session()
+    header = session.head(url, headers=headers).headers
+    return header
 
 
-def get_fileext_url(url):
-    """Get file's extension from pure url."""
+def get_filename_from_url(url):
+    url_parts = urlsplit(url)
+    if "url=" not in url_parts.query:
+        filename = url_parts.path.split('/')[-1]
+    else:
+        filename = re.findall(r"url=(.+?)[\?$]", url_parts.query)[0]
+    filename = requests.utils.unquote(filename)
+    return filename
 
-    fn = get_filename_url(url)
-    return os.path.splitext(fn)[1]
+
+def get_fileext_from_url(url):
+    filename = get_filename_from_url(url)
+    fileext = os.path.splitext(filename)[1]
+    return fileext
 
 
-def split_index(n, m, start=0):
-    """Return 0-based indexes pair (start, end) for splitting N items into M parts."""
-
-    if (n == 0) or (m == 0):
+def split_index(n_items, n_parts):
+    if (n_items == 0) or (n_parts == 0):
         yield (0, 0)
         return
-    part_size = (n - start) // m
-    for i in range(m - 1):
-        yield start + part_size * i, start + part_size * (i + 1)
-    # last partition may not have the same size
-    yield start + part_size * (m - 1), n
+    part_size = n_items // n_parts
+    for i in range(n_parts - 1):
+        start = part_size * i
+        end = part_size * (i + 1)
+        yield (start, end)
+    start = part_size * (n_parts - 1)
+    end = n_items
+    yield (start, end)
 
 
-def validify_name(name, include_path=False):
-    """Remove invalid character from name string."""
-
+def remove_invalid_char(filename, include_path=False):
     _dict = {"/": "\\", "\\": "/"}
-    return ''.join(c for c in name if not (c in ("?%*:|\"<>." + os.sep if not include_path else _dict[os.sep])))
+    not_allowed = ["?%*:|\"<>."
+                   + os.sep if not include_path else _dict[os.sep]]
+    return ''.join(c for c in filename if c not in not_allowed)
 
 
-def filename_check(fn, include_path=False):
-    """Check for filename conflicts and fix them."""
-
-    fn = validify_name(fn, include_path)
-
-    if include_path:
-        root_folder = os.path.split(fn)[0]
-        if len(root_folder) > 1:
-            os.makedirs(root_folder, exist_ok=True)
-
-    if os.path.isfile(fn):
-        name, ext = os.path.splitext(fn)
+def fix_filename(filename):
+    filename = remove_invalid_char(filename)
+    if os.path.isfile(filename):
+        name, ext = os.path.splitext(filename)
         i = 1
-        test_name = name + ' (1)' + ext
+        test_name = f"{name}(1){ext}"
         while os.path.isfile(test_name):
             i += 1
-            test_name = name + ' (%s)' % str(i) + ext
-        fn = test_name
-    return fn
+            test_name = f"{name}({str(i)}){ext}"
+        filename = test_name
+    return filename
 
-def check_progress(fn):
-    """Returns size of downloaded parts."""
-    
-    file_sz = []
+
+def get_size_downloaded(filename):
+    file_size = []
     i = 0
-    test_name = fn + '.part0'
+    test_name = f"{filename}.part0"
     while os.path.isfile(test_name):
         i += 1
-        file_sz.append(getsize(test_name))
-        test_name = fn + '.part' + str(i)
-    return file_sz
-
-def sizeof_fmt(num, suffix='B'):
-    """Format user-friendly filesize in kibibyte. (deprecated)"""
-
-    for unit in ['', 'K', 'M', 'G', 'T']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'P', suffix)
+        file_size.append(getsize(test_name))
+        test_name = f"{filename}.part{str(i)}"
+    return file_size
 
 
 def build_index(n, suffix="", prefix=""):
-    """Build indexes 001, 002, 003..."""
-
-    indexes = list()
+    indexes = []
     n_char = len(str(n))
     count = 0
     for _ in range(n):
@@ -154,72 +143,64 @@ def build_index(n, suffix="", prefix=""):
     return indexes
 
 
-def build_index_ext(urls):
-    """Build a list of number-indexed files with preserved extension from urls."""
-    return [(a + get_fileext_url(url)) for (a, url) in zip(build_index(len(urls)), urls)]
+def build_index_filename(urls):
+    filenames = []
+    for (index, url) in zip(build_index(len(urls)), urls):
+        filenames.append(
+            index + get_fileext_from_url(url)
+        )
+    return filenames
 
 
 def recompile_htm(fn, backup=False):
-    """Reindex zip file downloaded from htm.(deprecated)"""
-
     tmp_dir = os.path.splitext(fn)[0]
     shutil.unpack_archive(fn, extract_dir=tmp_dir)
     if backup:
         os.remove(fn)
     else:
-        os.rename(fn, fn + '.bak')
-
+        os.rename(fn, fn + ".bak")
     files = []
     for i in os.listdir(tmp_dir):
         f = join(tmp_dir, i)
         if isfile(f):
             files.append(f)
-    indexes = build_index(len(files), suffix='.jpg')
+    indexes = build_index(len(files), suffix=".jpg")
     sorted_files = sorted(files, key=lambda x: int(
         ''.join([it for it in x if it.isdigit()])))
     for (file, index) in zip(sorted_files, indexes):
-        crop_to_720p(file)
+        reduce_image_dimension(file)
         os.rename(file, join(tmp_dir, index))
-    shutil.make_archive(tmp_dir, 'zip', tmp_dir)
+    shutil.make_archive(tmp_dir, "zip", tmp_dir)
     shutil.rmtree(tmp_dir)
 
 
-def crop_to_720p(fn, min_len=720):
-    """Crop an image file to the width/height of min_len."""
-
+def reduce_image_dimension(fn, min_dim=720):
     img = Image.open(fn)
     width, height = img.size
-    if (width <= min_len) or (height <= min_len):
+    if (width <= min_dim) or (height <= min_dim):
         return
     if width < height:
-        new_width = min_len
+        new_width = min_dim
         percent = new_width / float(width)
         new_height = int(height * percent)
     else:
-        new_height = min_len
+        new_height = min_dim
         percent = new_height / float(height)
         new_width = int(width * percent)
     img = img.resize((new_width, new_height), Image.ANTIALIAS)
     img.save(fn)
 
 
-def _crop_to_720p(arg):
-    """A wrapper for crop_to_720p. Error will be ignored."""
-
-    try:
-        return crop_to_720p(*arg)
-    except:
-        return
+def wrapper_reduce_image_dimension(arg):
+    return reduce_image_dimension(*arg)
 
 
-def crop_imgs(files, min_len=720, verbose=True):
-    """Multiprocess crop images."""
-
+def reduce_images_dimension(files, min_dim=720, verbose=True):
     with Pool() as pool:
         if verbose:
-            t = tqdm(total=len(files), unit='Files')
-        inputs = list(zip(files, [min_len] * len(files)))
-        for _ in pool.imap_unordered(_crop_to_720p, inputs):
+            t = tqdm(total=len(files), unit="Files")
+        inputs = list(zip(files, [min_dim] * len(files)))
+        for _ in pool.imap_unordered(wrapper_reduce_image_dimension, inputs):
             if verbose:
                 t.update()
         if verbose:
@@ -227,38 +208,20 @@ def crop_imgs(files, min_len=720, verbose=True):
 
 
 def get_url_domain(url):
-    """Get url domain from pure url."""
-
     parsed_uri = urlparse(url)
-    domain = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    domain = "{uri.scheme}://{uri.netloc}/".format(uri=parsed_uri)
     return domain
 
 
-def fetch_html(url, max_tries=3):
-    """Fetch html string from url with max_tries times."""
-
-    count = max_tries
-    while count > 0:
-        try:
-            page = requests.get(url, verify=False, allow_redirects=True)
-            break
-        except:
-            count -= 1
-    if count == 0:
-        raise Exception("Cannot fetch " + url)
-    output = page.text
-    del page
-    return output
+def get_html_text(url):
+    session = retry_session()
+    page = session.get(url, verify=False, allow_redirects=True)
+    html = page.text
+    return html
 
 
-def is_html(url, max_tries=3):
-    """Check if url is html page."""
-
-    count = max_tries
-    while count > 0:
-        try:
-            r = requests.head(url)
-            return 'text/html' in r.headers['content-type']
-        except:
-            count -= 1
-    return False
+def is_html(url):
+    session = retry_session()
+    headers = session.head(url).headers
+    check = "text/html" in headers["content-type"]
+    return check
