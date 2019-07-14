@@ -129,15 +129,19 @@ def main(cmd=None):
     # Open text file containing urls
     elif os.path.isfile(cmd):
         with open(cmd, 'r') as f:
-            cmds = [line.strip() for line in f.readlines()]
+            urls = [line.strip() for line in f.readlines()]
             if cmd == "ctholly.errors":
-                errors = [error.split('|') for error in cmds]
+                errors = [error.split('|') for error in urls]
                 return redownload_error(errors)
             else:
-                n = len(cmds)
-                for i, cmd in enumerate(cmds):
+                n = len(urls)
+                for i, cmd in enumerate(urls):
                     print(f"[{i + 1}/{n}] {cmd}")
                     main(cmd)
+
+    # Recompile folder
+    elif os.path.isdir(cmd):
+        utils.recompile_htm(cmd)
 
     # Download normal file
     else:

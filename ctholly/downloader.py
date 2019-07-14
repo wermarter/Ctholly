@@ -225,6 +225,7 @@ class BatchDownloader(threading.Thread):
             fd.run()
         except Exception as e:
             self.errors.append((fd.url, fd.filename))
+            os.remove(fd.filename)
             if self.report:
                 print(f"@[{fd.filename}]:\n{e}")
 

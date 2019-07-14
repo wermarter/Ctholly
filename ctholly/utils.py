@@ -72,7 +72,7 @@ def get_filename_from_url(url):
     if "url=" not in url_parts.query:
         filename = url_parts.path.split('/')[-1]
     else:
-        filename = re.findall(r"url=(.+?)[\?$]", url_parts.query)[0]
+        filename = re.findall(r"url=(.+?)[?$]", url_parts.query)[0]
     filename = requests.utils.unquote(filename)
     return filename
 
@@ -97,11 +97,10 @@ def split_index(n_items, n_parts):
     yield (start, end)
 
 
-def remove_invalid_char(filename, include_path=False):
-    _dict = {"/": "\\", "\\": "/"}
-    not_allowed = ["?%*:|\"<>."
-                   + os.sep if not include_path else _dict[os.sep]]
-    return ''.join(c for c in filename if c not in not_allowed)
+def remove_invalid_char(filename):
+    invalid_char = ["?%*:|\"<>./\\"]
+    valid_chars = [c for c in filename if c not in invalid_char]
+    return ''.join(valid_chars)
 
 
 def fix_filename(filename):
@@ -128,7 +127,7 @@ def get_size_downloaded(filename):
     return file_size
 
 
-def build_index(n, suffix="", prefix=""):
+def build_index(n):
     indexes = []
     n_char = len(str(n))
     count = 0
@@ -137,7 +136,7 @@ def build_index(n, suffix="", prefix=""):
         index = str(count)
         while len(index) < n_char:
             index = '0' + index
-        indexes.append(prefix + index + suffix)
+        indexes.append(index)
     return indexes
 
 
@@ -151,25 +150,30 @@ def build_index_filename(urls):
 
 
 def recompile_htm(fn, backup=False):
-    tmp_dir = os.path.splitext(fn)[0]
-    shutil.unpack_archive(fn, extract_dir=tmp_dir)
-    if backup:
-        os.remove(fn)
+    if os.path.isfile(fn):
+        tmp_dir = os.path.splitext(fn)[0]
+        shutil.unpack_archive(fn, extract_dir=tmp_dir)
+        if backup:
+            os.remove(fn)
+        else:
+            os.rename(fn, fn + ".bak")
     else:
-        os.rename(fn, fn + ".bak")
+        tmp_dir = fn
     files = []
     for i in os.listdir(tmp_dir):
         f = join(tmp_dir, i)
         if isfile(f):
             files.append(f)
-    indexes = build_index(len(files), suffix=".jpg")
+    indexes = build_index(len(files))
+    indexes = [index + ".jpg" for index in indexes]
     sorted_files = sorted(files, key=lambda x: int(
         ''.join([it for it in x if it.isdigit()])))
     for (file, index) in zip(sorted_files, indexes):
         reduce_image_dimension(file)
         os.rename(file, join(tmp_dir, index))
-    shutil.make_archive(tmp_dir, "zip", tmp_dir)
-    shutil.rmtree(tmp_dir)
+    if os.path.isfile(fn):
+        shutil.make_archive(tmp_dir, "zip", tmp_dir)
+        shutil.rmtree(tmp_dir)
 
 
 def reduce_image_dimension(fn, min_dim=720):
@@ -220,6 +224,9 @@ def get_html_text(url):
 
 def is_html(url):
     session = retry_session()
-    headers = session.head(url).headers
+    try:
+        headers = session.head(url).headers
+    except requests.exceptions.MissingSchema:
+        return False
     check = "text/html" in headers["content-type"]
     return check
