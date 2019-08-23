@@ -1,7 +1,7 @@
 echo off
 TITLE Crafted by Wermarter
-D:
-cd Playground\Ctholly
+%~d0
+cd %~p0
 call activate ctholly
 cls
 python cli.py
