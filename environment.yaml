@@ -1,5 +1,6 @@
 name: Ctholly
 dependencies:
+  - pip
   - pillow
   - python
   - requests

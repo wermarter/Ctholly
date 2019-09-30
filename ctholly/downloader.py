@@ -14,7 +14,7 @@ def download_file(url):
 def download_manga(url, title, img_urls):
     print(f"Fetching {title} ({len(img_urls)})...")
     bd = BatchDownloader(img_urls, title, 'numeric',
-                         n_thread=2, n_file=4, headers={'referer': url})
+                         n_thread=1, n_file=16, headers={'referer': url})
     print(f"Downloading {title} ({len(img_urls)})...")
     bd.run()
     print("Cropping images...")
@@ -208,7 +208,8 @@ class BatchDownloader(threading.Thread):
         self._init_downloaders()
 
     def _init_downloaders(self):
-        with ThreadPool(self.n_file * self.n_thread) as size_pool:
+        # with ThreadPool(self.n_file * self.n_thread) as size_pool:
+        with ThreadPool(2) as size_pool:
             iter_map = size_pool.imap(
                 self._fetch_sizes, zip(self.urls, self.filenames))
             if self.report:

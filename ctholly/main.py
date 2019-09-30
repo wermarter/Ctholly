@@ -20,10 +20,11 @@ def fetch_htm(url):
 
     # Determine image server (thanks to Hentoid)
     url = url.replace('galleries', 'reader')
-    book_id = int(re.findall(r"reader/(.+).html", url)[0][-1])
-    if book_id == 1:
-        book_id = 0
-    img_prefix = "https://" + ("a" if (book_id % 2 == 0) else "b") + "a"
+    book_id = int(re.findall(r"reader/(.+).html", url)[0][-1]) % 10
+    hostname_suffix = "a"
+    number_of_frontends = 3
+    hostname_prefix_base = 97
+    img_prefix = "https://" + chr(hostname_prefix_base + (book_id % number_of_frontends)) + hostname_suffix
 
     # Get title
     html = utils.get_html_text(url)
@@ -42,7 +43,8 @@ _HVN = "https://hentaivn.net"
 
 
 def fetch_hvn(url, title=None):
-    """Download single-chap, one-shot or a-series from HVN."""
+    """Download single-chap, one-shot or a-series from HVN.
+        Deprecated. HVN is downed."""
 
     html = utils.get_html_text(url)
 
