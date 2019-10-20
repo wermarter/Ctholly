@@ -132,9 +132,8 @@ def main(cmd=None):
     elif os.path.isfile(cmd):
         with open(cmd, 'r') as f:
             urls = [line.strip() for line in f.readlines()]
-            if cmd == "ctholly.errors":
-                errors = [error.split('|') for error in urls]
-                return redownload_error(errors)
+            if cmd == utils.ERROR_FILE:
+                return redownload_error()
             else:
                 n = len(urls)
                 for i, cmd in enumerate(urls):

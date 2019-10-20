@@ -11,6 +11,7 @@ from multiprocessing import Pool
 from os.path import getsize, isfile, join
 from urllib.parse import urlparse, urlsplit
 
+ERROR_FILE = "errors"
 
 # https://www.peterbe.com/plog/best-practice-with-retries-with-requests
 def retry_session(

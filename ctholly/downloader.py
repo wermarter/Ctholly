@@ -1,3 +1,4 @@
+import pickle
 import os
 import threading
 from multiprocessing.dummy import Pool as ThreadPool
@@ -14,24 +15,25 @@ def download_file(url):
 def download_manga(url, title, img_urls):
     print(f"Fetching {title} ({len(img_urls)})...")
     bd = BatchDownloader(img_urls, title, 'numeric',
-                         n_thread=1, n_file=16, headers={'referer': url})
+                         n_thread=4, n_file=4, headers={'referer': url})
     print(f"Downloading {title} ({len(img_urls)})...")
     bd.run()
     print("Cropping images...")
     utils.reduce_images_dimension(bd.file_dests, 720)
 
 
-def redownload_error(errors, headers=None):
-    img_urls, filenames = [], []
-    for (url, filename) in errors:
-        img_urls.append(url)
-        filenames.append(filename)
-    print(f"Retrying failed downloads ({len(img_urls)})...")
-    bd = BatchDownloader(img_urls, '.', filenames,
-                         n_thread=2, n_file=8, headers=headers)
-    bd.run()
+def redownload_error():
+    with open(utils.ERROR_FILE, "rb") as f:
+        errors = pickle.load(f)
+    print(f"Retrying failed downloads ({len(errors)})...")
+    filenames = []
+    for downloader in errors:
+        downloader.report = True
+        downloader.n_thread = 1
+        downloader.run()
+        filenames.append(downloader.filename)
     print("Cropping images...")
-    utils.reduce_images_dimension(bd.file_dests, 720)
+    utils.reduce_images_dimension(filenames, 720)
 
 
 def report_download_queue(queue, total_size):
@@ -126,8 +128,10 @@ class FileDownloader(threading.Thread):
         self.n_thread = n_thread
         self.multithread = multithread
         self.setName(filename)
+        self.n_run = 0
 
     def run(self):
+        self.n_run += 1
         download_threads = []
         part_names = []
         for i, (start, end) in enumerate(
@@ -158,17 +162,23 @@ class FileDownloader(threading.Thread):
 
         # Join downloaded parts of file
         utils.join_files(self.filename, part_names, self.report)
-        self._check_filesize()
+
+        # Filesize check
+        if not self._check_filesize():
+            if self.report:
+                print(f"Size mismatched. Retrying...")
+            if self.n_run < 3:
+                return self.run()
+            else:
+                raise Exception("Cannot fully download this file.")
 
     def _check_filesize(self):
         actual_size = os.path.getsize(self.filename)
         if actual_size != self.filesize:
-            if self.report:
-                delete = input(f"Size mismatched [{actual_size}/{self.filesize}]. Delete? ")
-                if str(delete).upper()[0] != 'Y':
-                    os.remove(self.filename)
-            else:
-                raise Exception(f"Size mismatched [{actual_size}/{self.filesize}].")
+            os.remove(self.filename)
+            return False
+        else:
+            return True
 
 
 class BatchDownloader(threading.Thread):
@@ -192,15 +202,15 @@ class BatchDownloader(threading.Thread):
             self._q = report
             self.report = False
         else:
-            self.report = report
             self._q = Queue()
+            self.report = report
 
         self.n_thread = n_thread
         self.n_file = n_file
         self.urls = urls
         self.directory = directory
         self.file_dests = []
-        self.errors = []
+        self.errors = Queue()
         self.filenames = filenames
         self.downloaders = []
         self.batch_size = 0
@@ -225,7 +235,8 @@ class BatchDownloader(threading.Thread):
         try:
             fd.run()
         except Exception as e:
-            self.errors.append((fd.url, fd.filename))
+            self.errors.put(fd)
+            self.file_dests.remove(fd.filename)
             os.remove(fd.filename)
             if self.report:
                 print(f"@[{fd.filename}]:\n{e}")
@@ -258,12 +269,15 @@ class BatchDownloader(threading.Thread):
             reporter.join()
 
         # Error ouput can be fed back into input
-        if len(self.errors) > 0:
-            with open("ctholly.errors", 'a') as f:
-                for error in self.errors:
-                    f.write(f"{error[0]}|{error[1]}\n")
+        errors = []
+        while not self.errors.empty():
+            errors.append(self.errors.get())
+
+        if len(errors) > 0:
+            with open(utils.ERROR_FILE, "wb") as f:
+                pickle.dump(errors, f)
             if self.report:
-                print(f"There are {len(self.errors)} errors.")
+                print(f"There are {errors} errors.")
                 prompt = input("Do you want to retry? ")
                 if prompt.upper().startswith('Y'):
-                    redownload_error(self.errors, self.headers)
+                    redownload_error()
