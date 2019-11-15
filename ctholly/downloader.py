@@ -8,7 +8,7 @@ from ctholly import utils
 
 
 def download_file(url):
-    downloader = FileDownloader(url, n_thread=8)
+    downloader = FileDownloader(url, n_thread=16)
     downloader.run()
 
 

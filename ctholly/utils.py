@@ -13,6 +13,7 @@ from urllib.parse import urlparse, urlsplit
 
 ERROR_FILE = "errors"
 
+
 # https://www.peterbe.com/plog/best-practice-with-retries-with-requests
 def retry_session(
         retries=3,
@@ -80,8 +81,12 @@ def get_filename_from_url(url):
 
 def get_fileext_from_url(url):
     filename = get_filename_from_url(url)
-    fileext = os.path.splitext(filename)[1]
+    fileext = extract_ext(filename)
     return fileext
+
+
+def extract_ext(filename):
+    return os.path.splitext(filename)[1]
 
 
 def split_index(n_items, n_parts):

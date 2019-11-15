@@ -19,21 +19,28 @@ def fetch_htm(url):
     """Download single chap from HTM."""
 
     # Determine image server (thanks to Hentoid)
-    url = url.replace('galleries', 'reader')
-    book_id = int(re.findall(r"reader/(.+).html", url)[0][-1]) % 10
+    book_id = int(str(re.findall(r"-(.+?)\.html", url)[0]).split('-')[-1])
     hostname_suffix = "a"
     number_of_frontends = 3
     hostname_prefix_base = 97
     img_prefix = "https://" + chr(hostname_prefix_base + (book_id % number_of_frontends)) + hostname_suffix
+    img_prefix += ".hitomi.la/images/"
 
     # Get title
+    url = _HTM + "/reader/" + str(book_id) + ".html"
     html = utils.get_html_text(url)
     title = re.findall(r"<title>(.+) \| Hitomi.la</title>", html)[0]
     title = utils.remove_invalid_char(title)
 
     # Get url of images
-    res = re.findall(r"<div class=\"img-url\">//g(.+?)</div>", html)
-    img_urls = [img_prefix + s for s in res]
+    json_file = "https://ltn.hitomi.la/galleries/" + str(book_id) + ".js"
+    json_file = utils.get_html_text(json_file)
+    filenames = re.findall(r",\"name\":\"(.+?)\",", json_file)
+    hashs = re.findall(r",\"hash\":\"(.+?)\",", json_file)
+    compAs = [img_hash[-1] for img_hash in hashs]
+    compBs = [img_hash[-3:-1] for img_hash in hashs]
+    img_urls = [img_prefix + compA + '/' + compB + '/' + img_hash + utils.extract_ext(filename)
+                for compA, compB, img_hash, filename in zip(compAs, compBs, hashs, filenames)]
 
     # Execute download
     download_manga(url, title, img_urls)
