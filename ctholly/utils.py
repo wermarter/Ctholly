@@ -160,9 +160,9 @@ def recompile_htm(fn, backup=False):
         tmp_dir = os.path.splitext(fn)[0]
         shutil.unpack_archive(fn, extract_dir=tmp_dir)
         if backup:
-            os.remove(fn)
-        else:
             os.rename(fn, fn + ".bak")
+        else:
+            os.remove(fn)
     else:
         tmp_dir = fn
     files = []
@@ -171,12 +171,16 @@ def recompile_htm(fn, backup=False):
         if isfile(f):
             files.append(f)
     indexes = build_index(len(files))
-    indexes = [index + ".jpg" for index in indexes]
+    indexes = [join(tmp_dir, index + ".jpg") for index in indexes]
     sorted_files = sorted(files, key=lambda x: int(
         ''.join([it for it in x if it.isdigit()])))
+
     for (file, index) in zip(sorted_files, indexes):
-        reduce_image_dimension(file)
-        os.rename(file, join(tmp_dir, index))
+        # reduce_image_dimension(file)
+        os.rename(file, index)
+
+    reduce_images_dimension(indexes)
+
     if os.path.isfile(fn):
         shutil.make_archive(tmp_dir, "zip", tmp_dir)
         shutil.rmtree(tmp_dir)

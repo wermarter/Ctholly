@@ -149,7 +149,11 @@ def main(cmd=None):
 
     # Recompile folder
     elif os.path.isdir(cmd):
-        utils.recompile_htm(cmd)
+        # utils.recompile_htm(cmd)
+        for i in os.listdir(cmd):
+            fn = os.path.join(cmd, i)
+            print(fn)
+            utils.recompile_htm(fn)
 
     # Download normal file
     else:
