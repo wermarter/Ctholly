@@ -155,7 +155,7 @@ def build_index_filename(urls):
     return filenames
 
 
-def recompile_htm(fn, backup=False):
+def recompile_htm(fn, backup=True):
     if os.path.isfile(fn):
         tmp_dir = os.path.splitext(fn)[0]
         shutil.unpack_archive(fn, extract_dir=tmp_dir)
@@ -204,7 +204,11 @@ def reduce_image_dimension(fn, min_dim=720):
 
 
 def wrapper_reduce_image_dimension(arg):
-    return reduce_image_dimension(*arg)
+    try:
+        reduce_image_dimension(*arg)
+    except Exception as e:
+        print("Error with", arg)
+        print(e)
 
 
 def reduce_images_dimension(files, min_dim=720, verbose=True):
